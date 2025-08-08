@@ -1,51 +1,114 @@
 package com.codewithprashant.musicapp.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Brush
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Primary,
+    onPrimary = TextPrimary,
+    primaryContainer = PrimaryVariant,
+    onPrimaryContainer = TextPrimary,
+    secondary = Secondary,
+    onSecondary = TextPrimary,
+    secondaryContainer = SecondaryVariant,
+    onSecondaryContainer = TextPrimary,
+    tertiary = AccentPink,
+    onTertiary = TextPrimary,
+    background = BackgroundDark,
+    onBackground = TextPrimary,
+    surface = SurfaceDark,
+    onSurface = TextPrimary,
+    surfaceVariant = CardDark,
+    onSurfaceVariant = TextSecondary,
+    outline = TextTertiary,
+    outlineVariant = TextTertiary,
+    error = AccentRed,
+    onError = TextPrimary,
+    errorContainer = AccentRed,
+    onErrorContainer = TextPrimary
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = Primary,
+    onPrimary = TextPrimaryLight,
+    primaryContainer = PrimaryVariant,
+    onPrimaryContainer = TextPrimaryLight,
+    secondary = Secondary,
+    onSecondary = TextPrimaryLight,
+    secondaryContainer = SecondaryVariant,
+    onSecondaryContainer = TextPrimaryLight,
+    tertiary = AccentPink,
+    onTertiary = TextPrimaryLight,
+    background = BackgroundLight,
+    onBackground = TextPrimaryLight,
+    surface = SurfaceLight,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = CardLight,
+    onSurfaceVariant = TextSecondaryLight,
+    outline = TextTertiaryLight,
+    outlineVariant = TextTertiaryLight,
+    error = AccentRed,
+    onError = TextPrimaryLight,
+    errorContainer = AccentRed,
+    onErrorContainer = TextPrimaryLight
 )
+
+object GradientDefaults {
+    val MainGradient = Brush.verticalGradient(
+        colors = listOf(GradientStart, GradientMiddle, GradientEnd)
+    )
+
+    val PlayerGradient = Brush.verticalGradient(
+        colors = listOf(PlayerGradientStart, PlayerGradientMiddle, PlayerGradientEnd)
+    )
+
+    val CardGradient = Brush.verticalGradient(
+        colors = listOf(CardGradientStart, CardGradientEnd)
+    )
+
+    val ButtonGradient = Brush.horizontalGradient(
+        colors = listOf(ButtonGradientStart, ButtonGradientEnd)
+    )
+
+    val ProgressGradient = Brush.horizontalGradient(
+        colors = listOf(ProgressGradientStart, ProgressGradientEnd)
+    )
+
+    val OverlayGradient = Brush.verticalGradient(
+        colors = listOf(OverlayGradientStart, OverlayGradientMiddle, OverlayGradientEnd)
+    )
+
+    val ShimmerGradient = Brush.horizontalGradient(
+        colors = listOf(ShimmerGradientStart, ShimmerGradientMiddle, ShimmerGradientEnd)
+    )
+
+    val GlassGradient = Brush.verticalGradient(
+        colors = listOf(GlassGradientStart, GlassGradientEnd)
+    )
+
+    val RockGradient = Brush.horizontalGradient(
+        colors = listOf(RockGradientStart, RockGradientEnd)
+    )
+
+    val PopGradient = Brush.horizontalGradient(
+        colors = listOf(PopGradientStart, PopGradientEnd)
+    )
+
+    val ElectronicGradient = Brush.horizontalGradient(
+        colors = listOf(ElectronicGradientStart, ElectronicGradientEnd)
+    )
+}
 
 @Composable
 fun MusicAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

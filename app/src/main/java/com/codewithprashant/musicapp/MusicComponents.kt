@@ -1,288 +1,396 @@
 package com.codewithprashant.musicapp
 
-import android.content.ContentUris
-import android.net.Uri
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-// Remove unused import - only add if you actually use String.toUri() elsewhere
+import com.codewithprashant.musicapp.ui.theme.*
+import kotlin.random.Random
 
 @Composable
-fun SongItem(
-    song: Song,
-    onSongClick: (Song) -> Unit,
-    onPlayClick: (Song) -> Unit
+fun AlbumArtCard(
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean = false,
+    onClick: () -> Unit = {}
 ) {
+    val rotation by animateFloatAsState(
+        targetValue = if (isPlaying) 360f else 0f,
+        animationSpec = tween(
+            durationMillis = if (isPlaying) 10000 else 0,
+            delayMillis = 0
+        ),
+        label = "Album rotation"
+    )
+
+    Card(
+        modifier = modifier
+            .size(200.dp)
+            .clickable { onClick() },
+        shape = CircleShape,
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GradientDefaults.MainGradient)
+                .rotate(rotation),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Album,
+                contentDescription = "Album Art",
+                tint = TextPrimary,
+                modifier = Modifier.size(80.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun EqualizerVisualization(
+    modifier: Modifier = Modifier,
+    isPlaying: Boolean = false,
+    barCount: Int = 5
+) {
+    var animationValues by remember { mutableStateOf(List(barCount) { 0.3f }) }
+
+    LaunchedEffect(isPlaying) {
+        if (isPlaying) {
+            while (isPlaying) {
+                animationValues = List(barCount) { Random.nextFloat() * 0.9f + 0.1f }
+                kotlinx.coroutines.delay(200)
+            }
+        } else {
+            animationValues = List(barCount) { 0.1f }
+        }
+    }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        animationValues.forEachIndexed { index, height ->
+            val animatedHeight by animateFloatAsState(
+                targetValue = height,
+                animationSpec = tween(200),
+                label = "Bar height $index"
+            )
+
+            Box(
+                modifier = Modifier
+                    .width(8.dp)
+                    .height((40 * animatedHeight).dp)
+                    .background(
+                        brush = GradientDefaults.ProgressGradient,
+                        shape = RoundedCornerShape(4.dp)
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+fun CircularProgressPlayer(
+    modifier: Modifier = Modifier,
+    progress: Float,
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit
+) {
+    Box(
+        modifier = modifier.size(80.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            drawCircle(
+                color = ProgressBarInactive,
+                radius = size.minDimension / 2,
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+            )
+
+            drawArc(
+                color = ProgressGradientStart,
+                startAngle = -90f,
+                sweepAngle = 360f * progress,
+                useCenter = false,
+                style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+
+        FloatingActionButton(
+            onClick = onPlayPause,
+            modifier = Modifier.size(56.dp),
+            containerColor = Color.Transparent,
+            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(GradientDefaults.ButtonGradient, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    tint = TextPrimary,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun GenreChip(
+    genre: String,
+    isSelected: Boolean = false,
+    onClick: () -> Unit = {}
+) {
+    val backgroundColor = when (genre.lowercase()) {
+        "rock" -> GradientDefaults.RockGradient
+        "pop" -> GradientDefaults.PopGradient
+        "electronic" -> GradientDefaults.ElectronicGradient
+        else -> GradientDefaults.CardGradient
+    }
+
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable { onSongClick(song) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+            .clickable { onClick() }
+            .padding(4.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 6.dp else 2.dp
+        )
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(backgroundColor)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
         ) {
-            // Album Art with demo images
-            Card(
-                modifier = Modifier.size(60.dp),
-                shape = RoundedCornerShape(8.dp)
+            Text(
+                text = genre,
+                style = MaterialTheme.typography.labelMedium,
+                color = TextPrimary,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+fun VolumeSlider(
+    modifier: Modifier = Modifier,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Icon(
+            Icons.Default.VolumeDown,
+            contentDescription = "Volume Down",
+            tint = TextSecondary,
+            modifier = Modifier.size(20.dp)
+        )
+
+        Slider(
+            value = volume,
+            onValueChange = onVolumeChange,
+            modifier = Modifier.weight(1f),
+            colors = SliderDefaults.colors(
+                thumbColor = ProgressGradientStart,
+                activeTrackColor = ProgressGradientStart,
+                inactiveTrackColor = ProgressBarInactive
+            )
+        )
+
+        Icon(
+            Icons.Default.VolumeUp,
+            contentDescription = "Volume Up",
+            tint = TextSecondary,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun PlaylistCard(
+    title: String,
+    songCount: Int,
+    duration: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GradientDefaults.CardGradient)
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Try real album art first, then demo images
-                val albumArtUri = ContentUris.withAppendedId(
-                    Uri.parse("content://media/external/audio/albumart"),
-                    song.albumId
-                )
-
-                // For demo songs, use colorful backgrounds with music icons
-                if (song.data.startsWith("/demo/")) {
-                    // Generate consistent color based on song ID
-                    val colors = listOf(
-                        Color(0xFF6200EA), // Purple
-                        Color(0xFF00BCD4), // Cyan
-                        Color(0xFF4CAF50), // Green
-                        Color(0xFFFF5722), // Deep Orange
-                        Color(0xFF3F51B5), // Indigo
-                        Color(0xFFE91E63), // Pink
-                        Color(0xFF9C27B0), // Purple
-                        Color(0xFF2196F3), // Blue
-                        Color(0xFFFF9800), // Orange
-                        Color(0xFF795548), // Brown
-                        Color(0xFF607D8B), // Blue Grey
-                        Color(0xFFFFEB3B), // Yellow
-                        Color(0xFF8BC34A), // Light Green
-                        Color(0xFFCDDC39), // Lime
-                        Color(0xFFFFC107)  // Amber
-                    )
-
-                    val colorIndex = (song.id % colors.size).toInt()
-                    val backgroundColor = colors[colorIndex]
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(backgroundColor),
-                        contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Icon(
-                            Icons.Default.MusicNote,
-                            contentDescription = "Album Art",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TextPrimary,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "$songCount songs",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
                         )
                     }
-                } else {
-                    // For real songs, try to load album art
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AsyncImage(
-                            model = albumArtUri,
-                            contentDescription = "Album Art",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
-                            error = androidx.compose.ui.graphics.painter.ColorPainter(MaterialTheme.colorScheme.primary)
-                        )
 
-                        // Overlay icon for error state (will show through transparent error painter)
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Play Playlist",
+                        tint = AccentGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    Text(
+                        text = duration,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextTertiary
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Icon(
-                            Icons.Default.MusicNote,
-                            contentDescription = "Music",
-                            tint = Color.White,
-                            modifier = Modifier.size(30.dp)
+                            Icons.Default.Favorite,
+                            contentDescription = "Favorite",
+                            tint = AccentPink,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = "Downloaded",
+                            tint = AccentGreen,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
             }
+        }
+    }
+}
 
-            // Song Info
+@Composable
+fun ArtistCard(
+    name: String,
+    albumCount: Int,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
+    Card(
+        modifier = modifier
+            .width(160.dp)
+            .height(200.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(GradientDefaults.MainGradient)
+        ) {
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(
+                            brush = GradientDefaults.GlassGradient,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Artist",
+                        tint = TextPrimary,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = song.title,
-                    fontSize = 16.sp,
+                    text = name,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
-                    text = song.artist,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp)
+                    text = "$albumCount albums",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
                 )
-
-                Text(
-                    text = song.getFormattedDuration(),
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-
-            // Play Button
-            IconButton(
-                onClick = { onPlayClick(song) },
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        RoundedCornerShape(20.dp)
-                    )
-            ) {
-                Icon(
-                    Icons.Default.PlayArrow,
-                    contentDescription = "Play",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SongsList(
-    songs: List<Song>,
-    onSongClick: (Song) -> Unit,
-    onPlayClick: (Song) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp)
-    ) {
-        items(songs) { song ->
-            SongItem(
-                song = song,
-                onSongClick = onSongClick,
-                onPlayClick = onPlayClick
-            )
-        }
-    }
-}
-
-@Composable
-fun LoadingScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(48.dp),
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = "Loading songs...",
-                modifier = Modifier.padding(top = 16.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-        }
-    }
-}
-
-@Composable
-fun EmptyState() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                Icons.Default.MusicNote,
-                contentDescription = "No Music",
-                modifier = Modifier.size(100.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-            )
-
-            Text(
-                text = "No music found",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 16.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            Text(
-                text = "Add some music to your device",
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 8.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-            )
-        }
-    }
-}
-
-@Composable
-fun PermissionDeniedScreen(onRequestPermission: () -> Unit) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
-        ) {
-            Icon(
-                Icons.Default.MusicNote,
-                contentDescription = "Permission Required",
-                modifier = Modifier.size(100.dp),
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-            )
-
-            Text(
-                text = "Permission Required",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 16.dp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "This app needs permission to access your music files",
-                fontSize = 14.sp,
-                modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            Button(
-                onClick = onRequestPermission,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Grant Permission")
             }
         }
     }

@@ -1,3 +1,4 @@
+// SearchScreen.kt - Fixed Version with All Errors Resolved
 package com.codewithprashant.musicapp
 
 import androidx.compose.animation.*
@@ -15,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.codewithprashant.musicapp.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,11 +53,7 @@ fun SearchScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1A1A2E),
-                        Color(0xFF16213E),
-                        Color(0xFF0F3460)
-                    )
+                    colors = listOf(DeepNavy, MidnightBlue, DarkCharcoal)
                 )
             )
     ) {
@@ -103,86 +100,111 @@ fun SearchTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(20.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .background(
-                    Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
+                .size(48.dp)
+                .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
         ) {
             Icon(
                 Icons.AutoMirrored.Rounded.ArrowBack,
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }
 
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = onSearchQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester),
-            placeholder = {
-                Text(
-                    "Search songs, artists, albums...",
-                    color = Color.White.copy(alpha = 0.5f)
-                )
-            },
-            leadingIcon = {
-                Icon(
-                    Icons.Rounded.Search,
-                    contentDescription = "Search",
-                    tint = Color.White.copy(alpha = 0.7f)
-                )
-            },
-            trailingIcon = {
-                if (searchQuery.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onSearchQueryChange("") }
-                    ) {
-                        Icon(
-                            Icons.Rounded.Clear,
-                            contentDescription = "Clear",
-                            tint = Color.White.copy(alpha = 0.7f)
-                        )
-                    }
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
-                cursorColor = Color.White
-            ),
+        Card(
+            modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(25.dp),
-            singleLine = true
-        )
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                GlassMedium,
+                                GlassLight
+                            )
+                        ),
+                        RoundedCornerShape(25.dp)
+                    ),
+                placeholder = {
+                    Text(
+                        "Search songs, artists, albums...",
+                        color = TextTertiary,
+                        fontSize = 16.sp
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Rounded.Search,
+                        contentDescription = "Search",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = { onSearchQueryChange("") }
+                        ) {
+                            Icon(
+                                Icons.Rounded.Clear,
+                                contentDescription = "Clear",
+                                tint = TextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary,
+                    focusedBorderColor = SoftPurple.copy(alpha = 0.4f),
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    cursorColor = SoftPurple,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(25.dp),
+                singleLine = true
+            )
+        }
 
         IconButton(
             onClick = { },
             modifier = Modifier
+                .size(48.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF6366F1),
-                            Color(0xFF8B5CF6)
+                            SoftBlue.copy(alpha = 0.4f),
+                            SoftBlue.copy(alpha = 0.2f)
                         )
                     ),
+                    CircleShape
+                )
+                .border(
+                    1.dp,
+                    SoftBlue.copy(alpha = 0.3f),
                     CircleShape
                 )
         ) {
             Icon(
                 Icons.Rounded.FilterList,
                 contentDescription = "Filter",
-                tint = Color.White,
+                tint = SoftBlue,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -196,7 +218,7 @@ fun SearchFilterRow(
     onFilterSelected: (String) -> Unit
 ) {
     LazyRow(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(filters) { filter ->
@@ -205,7 +227,8 @@ fun SearchFilterRow(
             Card(
                 modifier = Modifier.clickable { onFilterSelected(filter) },
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = if (isSelected) CardDefaults.cardElevation(defaultElevation = 8.dp) else CardDefaults.cardElevation(0.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -213,25 +236,34 @@ fun SearchFilterRow(
                             if (isSelected) {
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF6366F1),
-                                        Color(0xFF8B5CF6)
+                                        SoftPurple.copy(alpha = 0.4f),
+                                        SoftBlue.copy(alpha = 0.3f)
                                     )
                                 )
                             } else {
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.1f),
-                                        Color.White.copy(alpha = 0.05f)
+                                        GlassLight,
+                                        GlassDark
                                     )
                                 )
                             }
                         )
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .then(
+                            if (isSelected) {
+                                Modifier.border(
+                                    1.dp,
+                                    SoftPurple.copy(alpha = 0.3f),
+                                    RoundedCornerShape(20.dp)
+                                )
+                            } else Modifier
+                        )
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = filter,
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+                        color = if (isSelected) TextPrimary else TextSecondary,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         fontSize = 14.sp
                     )
@@ -249,8 +281,8 @@ fun SearchEmptyState(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
         item {
             RecentSearchesSection()
@@ -279,21 +311,22 @@ fun RecentSearchesSection() {
         ) {
             Text(
                 text = "Recent Searches",
-                color = Color.White,
-                fontSize = 18.sp,
+                color = TextPrimary,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
 
             TextButton(onClick = { }) {
                 Text(
                     text = "Clear All",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 14.sp
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         val recentSearches = listOf("The Weeknd", "Chill Music", "Rock Hits")
 
@@ -311,36 +344,53 @@ fun RecentSearchItem(
     searchText: String,
     onRemoveClick: () -> Unit
 ) {
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
     ) {
-        Icon(
-            Icons.Rounded.History,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.5f),
-            modifier = Modifier.size(20.dp)
-        )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Text(
-            text = searchText,
-            color = Color.White.copy(alpha = 0.8f),
-            fontSize = 16.sp,
-            modifier = Modifier.weight(1f)
-        )
-
-        IconButton(onClick = onRemoveClick) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            GlassLight,
+                            GlassDark
+                        )
+                    )
+                )
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
-                Icons.Rounded.Close,
-                contentDescription = "Remove",
-                tint = Color.White.copy(alpha = 0.5f),
-                modifier = Modifier.size(16.dp)
+                Icons.Rounded.History,
+                contentDescription = null,
+                tint = TextTertiary,
+                modifier = Modifier.size(20.dp)
             )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = searchText,
+                color = TextSecondary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
+
+            IconButton(onClick = onRemoveClick) {
+                Icon(
+                    Icons.Rounded.Close,
+                    contentDescription = "Remove",
+                    tint = TextTertiary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
@@ -353,12 +403,12 @@ fun TrendingSearchesSection(
     Column {
         Text(
             text = "Trending Searches",
-            color = Color.White,
-            fontSize = 18.sp,
+            color = TextPrimary,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -382,24 +432,30 @@ fun TrendingChip(
     Card(
         modifier = Modifier.clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFFEC4899).copy(alpha = 0.3f),
-                            Color(0xFF8B5CF6).copy(alpha = 0.3f)
+                            SoftPink.copy(alpha = 0.3f),
+                            SoftPurple.copy(alpha = 0.25f)
                         )
                     )
                 )
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .border(
+                    1.dp,
+                    SoftPink.copy(alpha = 0.2f),
+                    RoundedCornerShape(20.dp)
+                )
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = text,
-                color = Color.White,
+                color = TextPrimary,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -412,20 +468,20 @@ fun BrowseCategoriesSection() {
     Column {
         Text(
             text = "Browse Categories",
-            color = Color.White,
-            fontSize = 18.sp,
+            color = TextPrimary,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         val categories = listOf(
-            CategoryItem("Pop", Color(0xFFEC4899), Icons.Rounded.Star),
-            CategoryItem("Rock", Color(0xFFDC2626), Icons.Rounded.MusicNote),
-            CategoryItem("Hip Hop", Color(0xFFF59E0B), Icons.Rounded.GraphicEq),
-            CategoryItem("Electronic", Color(0xFF06B6D4), Icons.Rounded.ElectricalServices),
-            CategoryItem("Jazz", Color(0xFF8B5CF6), Icons.Rounded.Piano),
-            CategoryItem("Classical", Color(0xFF10B981), Icons.Rounded.LibraryMusic)
+            CategoryItem("Pop", SoftPink, Icons.Rounded.Star),
+            CategoryItem("Rock", SoftBlue, Icons.Rounded.MusicNote),
+            CategoryItem("Hip Hop", SoftTeal, Icons.Rounded.GraphicEq),
+            CategoryItem("Electronic", SoftPurple, Icons.Rounded.ElectricalServices),
+            CategoryItem("Jazz", SoftGreen, Icons.Rounded.Piano),
+            CategoryItem("Classical", SoftBlue, Icons.Rounded.LibraryMusic)
         )
 
         Column(
@@ -467,10 +523,11 @@ fun CategoryCard(
 ) {
     Card(
         modifier = modifier
-            .height(80.dp)
+            .height(90.dp)
             .clickable { },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
@@ -478,12 +535,17 @@ fun CategoryCard(
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            category.color,
-                            category.color.copy(alpha = 0.7f)
+                            category.color.copy(alpha = 0.4f),
+                            category.color.copy(alpha = 0.2f)
                         )
                     )
                 )
-                .padding(12.dp),
+                .border(
+                    1.dp,
+                    category.color.copy(alpha = 0.3f),
+                    RoundedCornerShape(16.dp)
+                )
+                .padding(16.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
@@ -492,16 +554,16 @@ fun CategoryCard(
                 Icon(
                     category.icon,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = category.color,
                     modifier = Modifier.size(24.dp)
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
                 Text(
                     text = category.name,
-                    color = Color.White,
-                    fontSize = 14.sp,
+                    color = TextPrimary,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -518,8 +580,8 @@ fun SearchResultsContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         if (filter == "All" || filter == "Songs") {
             if (results.songs.isNotEmpty()) {
@@ -580,21 +642,15 @@ fun SearchSongItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.05f),
-                            Color.White.copy(alpha = 0.02f)
-                        )
-                    )
-                )
-                .padding(12.dp)
+                .glassCard(alpha = 0.08f, cornerRadius = 16.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -606,38 +662,44 @@ fun SearchSongItem(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFF6366F1),
-                                    Color(0xFF8B5CF6)
+                                    SoftPurple.copy(alpha = 0.6f),
+                                    SoftBlue.copy(alpha = 0.4f)
                                 )
                             ),
-                            RoundedCornerShape(8.dp)
+                            RoundedCornerShape(12.dp)
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.15f),
+                            RoundedCornerShape(12.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.MusicNote,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = song.title,
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${song.artist} • ${song.album}",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -646,18 +708,27 @@ fun SearchSongItem(
 
                 Text(
                     text = song.duration,
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 12.sp
+                    color = TextTertiary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            GlassMedium,
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.MoreVert,
                         contentDescription = "More",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -674,21 +745,15 @@ fun SearchArtistItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.05f),
-                            Color.White.copy(alpha = 0.02f)
-                        )
-                    )
-                )
-                .padding(12.dp)
+                .glassCard(alpha = 0.08f, cornerRadius = 16.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -700,10 +765,15 @@ fun SearchArtistItem(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFF10B981),
-                                    Color(0xFF059669)
+                                    SoftGreen.copy(alpha = 0.6f),
+                                    SoftTeal.copy(alpha = 0.4f)
                                 )
                             ),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.15f),
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -711,35 +781,49 @@ fun SearchArtistItem(
                     Icon(
                         Icons.Rounded.Person,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = artist.name,
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.SemiBold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Artist • ${artist.albumCount} albums",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp
                     )
                 }
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            SoftBlue.copy(alpha = 0.2f),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            SoftBlue.copy(alpha = 0.3f),
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.PersonAdd,
                         contentDescription = "Follow",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
+                        tint = SoftBlue,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -756,21 +840,15 @@ fun SearchAlbumItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0.05f),
-                            Color.White.copy(alpha = 0.02f)
-                        )
-                    )
-                )
-                .padding(12.dp)
+                .glassCard(alpha = 0.08f, cornerRadius = 16.dp)
+                .padding(16.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -782,50 +860,69 @@ fun SearchAlbumItem(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFFEC4899),
-                                    Color(0xFFBE185D)
+                                    SoftPink.copy(alpha = 0.6f),
+                                    SoftPurple.copy(alpha = 0.4f)
                                 )
                             ),
-                            RoundedCornerShape(8.dp)
+                            RoundedCornerShape(12.dp)
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.15f),
+                            RoundedCornerShape(12.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.Album,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = album.title,
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Album • ${album.artist} • ${album.year}",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            SoftPurple.copy(alpha = 0.2f),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            SoftPurple.copy(alpha = 0.3f),
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.PlayArrow,
                         contentDescription = "Play",
-                        tint = Color.White.copy(alpha = 0.7f),
-                        modifier = Modifier.size(20.dp)
+                        tint = SoftPurple,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
@@ -835,33 +932,67 @@ fun SearchAlbumItem(
 
 @Composable
 fun NoResultsFound(query: String) {
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxSize()
             .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Icon(
-            Icons.Rounded.SearchOff,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.5f),
-            modifier = Modifier.size(64.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .glassCard(alpha = 0.1f, cornerRadius = 24.dp)
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                SoftBlue.copy(alpha = 0.3f),
+                                SoftPurple.copy(alpha = 0.2f)
+                            )
+                        ),
+                        CircleShape
+                    )
+                    .border(
+                        1.dp,
+                        Color.White.copy(alpha = 0.2f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.SearchOff,
+                    contentDescription = null,
+                    tint = TextSecondary,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "No results found",
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Text(
+                text = "No results found",
+                color = TextPrimary,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        Text(
-            text = "Try searching for something else",
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 14.sp
-        )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Try searching with different keywords",
+                color = TextSecondary,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -869,13 +1000,12 @@ fun NoResultsFound(query: String) {
 fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         text = title,
-        color = Color.White,
-        fontSize = 18.sp,
+        color = TextPrimary,
+        fontSize = 20.sp,
         fontWeight = FontWeight.Bold,
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 8.dp)
-
+            .padding(bottom = 12.dp)
     )
 }
 
@@ -903,19 +1033,31 @@ private fun generateSearchResults(query: String): SearchResults {
     val sampleSongs = listOf(
         Song(title = "Blinding Lights", artist = "The Weeknd", album = "After Hours", duration = "3:20", albumArt = ""),
         Song(title = "Watermelon Sugar", artist = "Harry Styles", album = "Fine Line", duration = "2:54", albumArt = ""),
-        Song(title = "Levitating", artist = "Dua Lipa", album = "Future Nostalgia", duration = "3:23", albumArt = "")
+        Song(title = "Levitating", artist = "Dua Lipa", album = "Future Nostalgia", duration = "3:23", albumArt = ""),
+        Song(title = "Anti-Hero", artist = "Taylor Swift", album = "Midnights", duration = "3:20", albumArt = ""),
+        Song(title = "As It Was", artist = "Harry Styles", album = "Harry's House", duration = "2:47", albumArt = ""),
+        Song(title = "Good 4 U", artist = "Olivia Rodrigo", album = "SOUR", duration = "2:58", albumArt = ""),
+        Song(title = "Stay", artist = "The Kid LAROI & Justin Bieber", album = "F*CK LOVE 3", duration = "2:21", albumArt = ""),
+        Song(title = "Heat Waves", artist = "Glass Animals", album = "Dreamland", duration = "3:58", albumArt = "")
     )
 
     val sampleArtists = listOf(
         Artist(id = "1", name = "The Weeknd", albumCount = 5, songCount = 52),
         Artist(id = "2", name = "Harry Styles", albumCount = 3, songCount = 34),
-        Artist(id = "3", name = "Dua Lipa", albumCount = 2, songCount = 28)
+        Artist(id = "3", name = "Dua Lipa", albumCount = 2, songCount = 28),
+        Artist(id = "4", name = "Taylor Swift", albumCount = 10, songCount = 156),
+        Artist(id = "5", name = "Olivia Rodrigo", albumCount = 1, songCount = 11),
+        Artist(id = "6", name = "Glass Animals", albumCount = 3, songCount = 42)
     )
 
     val sampleAlbums = listOf(
         Album(id = "1", title = "After Hours", artist = "The Weeknd", year = 2020, songs = emptyList()),
         Album(id = "2", title = "Fine Line", artist = "Harry Styles", year = 2019, songs = emptyList()),
-        Album(id = "3", title = "Future Nostalgia", artist = "Dua Lipa", year = 2020, songs = emptyList())
+        Album(id = "3", title = "Future Nostalgia", artist = "Dua Lipa", year = 2020, songs = emptyList()),
+        Album(id = "4", title = "Midnights", artist = "Taylor Swift", year = 2022, songs = emptyList()),
+        Album(id = "5", title = "Harry's House", artist = "Harry Styles", year = 2022, songs = emptyList()),
+        Album(id = "6", title = "SOUR", artist = "Olivia Rodrigo", year = 2021, songs = emptyList()),
+        Album(id = "7", title = "Dreamland", artist = "Glass Animals", year = 2020, songs = emptyList())
     )
 
     val filteredSongs = sampleSongs.filter {

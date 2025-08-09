@@ -1,116 +1,83 @@
+// ui/theme/Theme.kt
 package com.codewithprashant.musicapp.ui.theme
 
+import android.app.Activity
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
+// Dark color scheme optimized for glassmorphism
 private val DarkColorScheme = darkColorScheme(
-    primary = Primary,
+    primary = SoftPurple,
+    secondary = SoftBlue,
+    tertiary = SoftPink,
+    background = DeepNavy,
+    surface = DarkCharcoal,
+    surfaceVariant = GlassMedium,
     onPrimary = TextPrimary,
-    primaryContainer = PrimaryVariant,
-    onPrimaryContainer = TextPrimary,
-    secondary = Secondary,
     onSecondary = TextPrimary,
-    secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = TextPrimary,
-    tertiary = AccentPink,
     onTertiary = TextPrimary,
-    background = BackgroundDark,
     onBackground = TextPrimary,
-    surface = SurfaceDark,
     onSurface = TextPrimary,
-    surfaceVariant = CardDark,
     onSurfaceVariant = TextSecondary,
-    outline = TextTertiary,
-    outlineVariant = TextTertiary,
-    error = AccentRed,
-    onError = TextPrimary,
-    errorContainer = AccentRed,
-    onErrorContainer = TextPrimary
+    outline = GlassLight,
+    outlineVariant = GlassDark,
+    surfaceContainer = DarkCharcoal,
+    surfaceContainerHigh = MidnightBlue,
+    surfaceContainerHighest = DeepPurple
 )
 
+// Light color scheme (keep for compatibility, but app is designed for dark)
 private val LightColorScheme = lightColorScheme(
-    primary = Primary,
-    onPrimary = TextPrimaryLight,
-    primaryContainer = PrimaryVariant,
-    onPrimaryContainer = TextPrimaryLight,
-    secondary = Secondary,
-    onSecondary = TextPrimaryLight,
-    secondaryContainer = SecondaryVariant,
-    onSecondaryContainer = TextPrimaryLight,
-    tertiary = AccentPink,
-    onTertiary = TextPrimaryLight,
-    background = BackgroundLight,
-    onBackground = TextPrimaryLight,
-    surface = SurfaceLight,
-    onSurface = TextPrimaryLight,
-    surfaceVariant = CardLight,
-    onSurfaceVariant = TextSecondaryLight,
-    outline = TextTertiaryLight,
-    outlineVariant = TextTertiaryLight,
-    error = AccentRed,
-    onError = TextPrimaryLight,
-    errorContainer = AccentRed,
-    onErrorContainer = TextPrimaryLight
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40,
+    background = Color(0xFFFFFBFE),
+    surface = Color(0xFFFFFBFE),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = Color(0xFF1C1B1F),
+    onSurface = Color(0xFF1C1B1F),
 )
-
-object GradientDefaults {
-    val MainGradient = Brush.verticalGradient(
-        colors = listOf(GradientStart, GradientMiddle, GradientEnd)
-    )
-
-    val PlayerGradient = Brush.verticalGradient(
-        colors = listOf(PlayerGradientStart, PlayerGradientMiddle, PlayerGradientEnd)
-    )
-
-    val CardGradient = Brush.verticalGradient(
-        colors = listOf(CardGradientStart, CardGradientEnd)
-    )
-
-    val ButtonGradient = Brush.horizontalGradient(
-        colors = listOf(ButtonGradientStart, ButtonGradientEnd)
-    )
-
-    val ProgressGradient = Brush.horizontalGradient(
-        colors = listOf(ProgressGradientStart, ProgressGradientEnd)
-    )
-
-    val OverlayGradient = Brush.verticalGradient(
-        colors = listOf(OverlayGradientStart, OverlayGradientMiddle, OverlayGradientEnd)
-    )
-
-    val ShimmerGradient = Brush.horizontalGradient(
-        colors = listOf(ShimmerGradientStart, ShimmerGradientMiddle, ShimmerGradientEnd)
-    )
-
-    val GlassGradient = Brush.verticalGradient(
-        colors = listOf(GlassGradientStart, GlassGradientEnd)
-    )
-
-    val RockGradient = Brush.horizontalGradient(
-        colors = listOf(RockGradientStart, RockGradientEnd)
-    )
-
-    val PopGradient = Brush.horizontalGradient(
-        colors = listOf(PopGradientStart, PopGradientEnd)
-    )
-
-    val ElectronicGradient = Brush.horizontalGradient(
-        colors = listOf(ElectronicGradientStart, ElectronicGradientEnd)
-    )
-}
 
 @Composable
 fun MusicAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true, // Force dark theme for glassmorphism
+    // Dynamic color is available on Android 12+
+    dynamicColor: Boolean = false, // Disable to maintain consistent glassmorphism
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            val context = LocalContext.current
+            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        }
+
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = DeepNavy.toArgb()
+            window.navigationBarColor = DeepNavy.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = false
+        }
     }
 
     MaterialTheme(

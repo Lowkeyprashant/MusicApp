@@ -1,3 +1,4 @@
+// MainActivity.kt - Fixed Version with No Errors
 package com.codewithprashant.musicapp
 
 import android.os.Bundle
@@ -19,15 +20,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -73,10 +68,10 @@ fun MusicAppMain() {
             },
             transitionSpec = {
                 slideInVertically(
-                    animationSpec = tween(500),
+                    animationSpec = tween(600, easing = EaseOutCubic),
                     initialOffsetY = { if (targetState == "player") it else -it }
                 ) togetherWith slideOutVertically(
-                    animationSpec = tween(500),
+                    animationSpec = tween(600, easing = EaseInCubic),
                     targetOffsetY = { if (initialState == "player") it else -it }
                 )
             },
@@ -137,11 +132,7 @@ fun MainScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1A1A2E),
-                        Color(0xFF16213E),
-                        Color(0xFF0F3460)
-                    )
+                    colors = listOf(DeepNavy, MidnightBlue, DarkCharcoal)
                 )
             )
     ) {
@@ -199,20 +190,21 @@ fun TopBar(onSearchClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
             Text(
-                text = "Good Morning",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 14.sp
+                text = "Good Evening",
+                color = TextSecondary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = "Music Lover",
-                color = Color.White,
-                fontSize = 24.sp,
+                color = TextPrimary,
+                fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -223,40 +215,30 @@ fun TopBar(onSearchClick: () -> Unit) {
             IconButton(
                 onClick = onSearchClick,
                 modifier = Modifier
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFF6366F1),
-                                Color(0xFF8B5CF6)
-                            )
-                        ),
-                        CircleShape
-                    )
+                    .size(48.dp)
+                    .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
+                    .premiumGlow(glowColor = SoftBlue)
             ) {
                 Icon(
                     Icons.Rounded.Search,
                     contentDescription = "Search",
-                    tint = Color.White
+                    tint = TextPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
             IconButton(
                 onClick = { },
                 modifier = Modifier
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Color(0xFFEC4899),
-                                Color(0xFFBE185D)
-                            )
-                        ),
-                        CircleShape
-                    )
+                    .size(48.dp)
+                    .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
+                    .premiumGlow(glowColor = SoftPink)
             ) {
                 Icon(
                     Icons.Rounded.Notifications,
                     contentDescription = "Notifications",
-                    tint = Color.White
+                    tint = TextPrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -268,10 +250,10 @@ fun CustomTabRow(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit
 ) {
-    val tabs = listOf("Home", "Library", "Playlists", "Artists")
+    val tabs = listOf("Discover", "Library", "Playlists", "Artists")
 
     LazyRow(
-        modifier = Modifier.padding(horizontal = 16.dp),
+        modifier = Modifier.padding(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tabs.size) { index ->
@@ -280,11 +262,10 @@ fun CustomTabRow(
             Card(
                 modifier = Modifier
                     .clickable { onTabSelected(index) }
-                    .animateContentSize(),
+                    .animateContentSize(animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
                 shape = RoundedCornerShape(25.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                )
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -292,26 +273,34 @@ fun CustomTabRow(
                             if (isSelected) {
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color(0xFF6366F1),
-                                        Color(0xFF8B5CF6),
-                                        Color(0xFFEC4899)
+                                        SoftPurple.copy(alpha = 0.3f),
+                                        SoftBlue.copy(alpha = 0.2f)
                                     )
                                 )
                             } else {
                                 Brush.horizontalGradient(
                                     colors = listOf(
-                                        Color.White.copy(alpha = 0.1f),
-                                        Color.White.copy(alpha = 0.05f)
+                                        GlassLight,
+                                        GlassDark
                                     )
                                 )
                             }
                         )
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .then(
+                            if (isSelected) {
+                                Modifier.border(
+                                    1.dp,
+                                    SoftPurple.copy(alpha = 0.4f),
+                                    RoundedCornerShape(25.dp)
+                                )
+                            } else Modifier
+                        )
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = tabs[index],
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+                        color = if (isSelected) TextPrimary else TextSecondary,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                         fontSize = 14.sp
                     )
@@ -329,8 +318,8 @@ fun HomeContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(28.dp)
     ) {
         item {
             QuickAccessSection()
@@ -338,7 +327,7 @@ fun HomeContent(
 
         item {
             SectionHeader("Recently Played")
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
@@ -354,7 +343,7 @@ fun HomeContent(
 
         item {
             SectionHeader("Trending Now")
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
         items(songs.take(5)) { song ->
@@ -371,9 +360,10 @@ fun QuickAccessSection() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+            .height(140.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
@@ -381,13 +371,18 @@ fun QuickAccessSection() {
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
-                            Color(0xFF667EEA),
-                            Color(0xFF764BA2),
-                            Color(0xFFF093FB)
+                            SoftPurple.copy(alpha = 0.4f),
+                            SoftPink.copy(alpha = 0.3f),
+                            SoftTeal.copy(alpha = 0.2f)
                         )
                     )
                 )
-                .padding(20.dp),
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.1f),
+                    RoundedCornerShape(24.dp)
+                )
+                .padding(24.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Row(
@@ -398,27 +393,33 @@ fun QuickAccessSection() {
                 Column {
                     Text(
                         text = "Discover Weekly",
-                        color = Color.White,
-                        fontSize = 20.sp,
+                        color = TextPrimary,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Fresh music picked for you",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 14.sp
+                        text = "Fresh music curated for you",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
                 FloatingActionButton(
                     onClick = { },
-                    containerColor = Color.White.copy(alpha = 0.2f),
-                    elevation = FloatingActionButtonDefaults.elevation(0.dp)
+                    modifier = Modifier.size(56.dp),
+                    containerColor = Color.White.copy(alpha = 0.15f),
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 12.dp
+                    )
                 ) {
                     Icon(
                         Icons.Rounded.PlayArrow,
                         contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
+                        tint = TextPrimary,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }
@@ -433,25 +434,18 @@ fun RecentlyPlayedCard(
 ) {
     Card(
         modifier = Modifier
-            .width(140.dp)
-            .height(160.dp)
+            .width(150.dp)
+            .height(180.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF2D1B69),
-                            Color(0xFF11998E)
-                        )
-                    )
-                )
-                .padding(12.dp)
+                .glassCard(alpha = 0.1f, cornerRadius = 20.dp)
+                .padding(16.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -459,17 +453,27 @@ fun RecentlyPlayedCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(60.dp)
+                        .size(64.dp)
                         .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    SoftBlue.copy(alpha = 0.6f),
+                                    SoftTeal.copy(alpha = 0.4f)
+                                )
+                            ),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            1.dp,
                             Color.White.copy(alpha = 0.2f),
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(16.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.MusicNote,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -477,16 +481,17 @@ fun RecentlyPlayedCard(
                 Column {
                     Text(
                         text = song.title,
-                        color = Color.White,
-                        fontSize = 12.sp,
+                        color = TextPrimary,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = song.artist,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 10.sp,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -503,36 +508,32 @@ fun EnhancedSongItem(
 ) {
     var isPressed by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "scale"
     )
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(84.dp)
             .scale(scale)
             .clickable {
+                isPressed = true
                 onClick()
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF1E3A8A).copy(alpha = 0.3f),
-                            Color(0xFF7C3AED).copy(alpha = 0.2f),
-                            Color(0xFFBE185D).copy(alpha = 0.1f)
-                        )
-                    )
-                )
-                .padding(16.dp)
+                .glassCard(alpha = 0.08f, cornerRadius = 20.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -544,18 +545,23 @@ fun EnhancedSongItem(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFF6366F1),
-                                    Color(0xFF8B5CF6)
+                                    SoftPurple.copy(alpha = 0.6f),
+                                    SoftPink.copy(alpha = 0.4f)
                                 )
                             ),
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.15f),
+                            RoundedCornerShape(16.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.MusicNote,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -567,15 +573,16 @@ fun EnhancedSongItem(
                 ) {
                     Text(
                         text = song.title,
-                        color = Color.White,
+                        color = TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${song.artist} • ${song.album}",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -584,20 +591,37 @@ fun EnhancedSongItem(
 
                 Text(
                     text = song.duration,
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 12.sp
+                    color = TextTertiary,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            GlassLight,
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.MoreVert,
                         contentDescription = "More",
-                        tint = Color.White.copy(alpha = 0.7f)
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
+        }
+    }
+
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            kotlinx.coroutines.delay(150)
+            isPressed = false
         }
     }
 }
@@ -613,109 +637,152 @@ fun EnhancedMiniPlayer(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(20.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF1E3A8A),
-                            Color(0xFF7C3AED),
-                            Color(0xFFBE185D)
-                        )
-                    )
-                )
+                .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
         ) {
             Column {
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(2.dp),
-                    color = Color.White,
-                    trackColor = Color.White.copy(alpha = 0.3f)
+                        .height(3.dp),
+                    color = SoftPurple,
+                    trackColor = GlassDark
                 )
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(52.dp)
                             .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        SoftBlue.copy(alpha = 0.6f),
+                                        SoftTeal.copy(alpha = 0.4f)
+                                    )
+                                ),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .border(
+                                1.dp,
                                 Color.White.copy(alpha = 0.2f),
-                                RoundedCornerShape(12.dp)
+                                RoundedCornerShape(16.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             Icons.Rounded.MusicNote,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            tint = TextPrimary,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
 
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
                             text = song.title,
-                            color = Color.White,
-                            fontSize = 14.sp,
+                            color = TextPrimary,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = song.artist,
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 12.sp,
+                            color = TextSecondary,
+                            fontSize = 14.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
 
-                    IconButton(onClick = { }) {
+                    IconButton(
+                        onClick = { },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                GlassMedium,
+                                CircleShape
+                            )
+                    ) {
                         Icon(
                             Icons.Rounded.SkipPrevious,
                             contentDescription = "Previous",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    FloatingActionButton(
-                        onClick = { },
-                        modifier = Modifier.size(40.dp),
-                        containerColor = Color.White,
-                        elevation = FloatingActionButtonDefaults.elevation(0.dp)
-                    ) {
-                        Icon(
-                            if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = Color(0xFF1E3A8A),
+                            tint = TextPrimary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
 
-                    IconButton(onClick = { }) {
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    FloatingActionButton(
+                        onClick = { },
+                        modifier = Modifier.size(44.dp),
+                        containerColor = Color.Transparent,
+                        elevation = FloatingActionButtonDefaults.elevation(0.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            SoftPurple.copy(alpha = 0.8f),
+                                            SoftBlue.copy(alpha = 0.6f)
+                                        )
+                                    ),
+                                    CircleShape
+                                )
+                                .border(
+                                    1.dp,
+                                    Color.White.copy(alpha = 0.3f),
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Play",
+                                tint = TextPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = { },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                GlassMedium,
+                                CircleShape
+                            )
+                    ) {
                         Icon(
                             Icons.Rounded.SkipNext,
                             contentDescription = "Next",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
+                            tint = TextPrimary,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -728,8 +795,8 @@ fun EnhancedMiniPlayer(
 fun SectionHeader(title: String) {
     Text(
         text = title,
-        color = Color.White,
-        fontSize = 20.sp,
+        color = TextPrimary,
+        fontSize = 22.sp,
         fontWeight = FontWeight.Bold
     )
 }
@@ -740,8 +807,8 @@ fun LibraryContent(
     onSongClick: (Song) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        contentPadding = PaddingValues(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(songs) { song ->
             EnhancedSongItem(
@@ -758,7 +825,7 @@ fun PlaylistsContent(
     onPlaylistClick: (Playlist) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(playlists) { playlist ->
@@ -780,22 +847,15 @@ fun PlaylistCard(
             .fillMaxWidth()
             .height(100.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF667EEA),
-                            Color(0xFF764BA2)
-                        )
-                    )
-                )
-                .padding(16.dp)
+                .glassCard(alpha = 0.1f, cornerRadius = 20.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -805,15 +865,25 @@ fun PlaylistCard(
                     modifier = Modifier
                         .size(60.dp)
                         .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    SoftPink.copy(alpha = 0.6f),
+                                    SoftPurple.copy(alpha = 0.4f)
+                                )
+                            ),
+                            RoundedCornerShape(16.dp)
+                        )
+                        .border(
+                            1.dp,
                             Color.White.copy(alpha = 0.2f),
-                            RoundedCornerShape(12.dp)
+                            RoundedCornerShape(16.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Rounded.QueueMusic,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -825,23 +895,32 @@ fun PlaylistCard(
                 ) {
                     Text(
                         text = playlist.name,
-                        color = Color.White,
-                        fontSize = 16.sp,
+                        color = TextPrimary,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${playlist.songs.size} songs",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp
                     )
                 }
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            GlassMedium,
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.PlayArrow,
                         contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
+                        tint = TextPrimary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -855,7 +934,7 @@ fun ArtistsContent(
     onArtistClick: (Artist) -> Unit
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(artists) { artist ->
@@ -875,24 +954,17 @@ fun ArtistCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(84.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(
-                            Color(0xFF11998E),
-                            Color(0xFF38EF7D)
-                        )
-                    )
-                )
-                .padding(16.dp)
+                .glassCard(alpha = 0.1f, cornerRadius = 20.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
@@ -902,6 +974,16 @@ fun ArtistCard(
                     modifier = Modifier
                         .size(48.dp)
                         .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    SoftGreen.copy(alpha = 0.6f),
+                                    SoftTeal.copy(alpha = 0.4f)
+                                )
+                            ),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
                             Color.White.copy(alpha = 0.2f),
                             CircleShape
                         ),
@@ -910,7 +992,7 @@ fun ArtistCard(
                     Icon(
                         Icons.Rounded.Person,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = TextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -922,23 +1004,32 @@ fun ArtistCard(
                 ) {
                     Text(
                         text = artist.name,
-                        color = Color.White,
-                        fontSize = 16.sp,
+                        color = TextPrimary,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "${artist.albumCount} albums • ${artist.songCount} songs",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = TextSecondary,
                         fontSize = 14.sp
                     )
                 }
 
-                IconButton(onClick = { }) {
+                IconButton(
+                    onClick = { },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            GlassMedium,
+                            CircleShape
+                        )
+                ) {
                     Icon(
                         Icons.Rounded.Favorite,
                         contentDescription = "Follow",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                        tint = SoftPink,
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

@@ -1,3 +1,4 @@
+// MusicComponents.kt - Complete Glassmorphism Implementation
 package com.codewithprashant.musicapp
 
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.codewithprashant.musicapp.ui.theme.*
 import kotlin.random.Random
+import androidx.compose.ui.unit.Dp
 
 @Composable
 fun AlbumArtCard(
@@ -46,12 +49,21 @@ fun AlbumArtCard(
             .size(200.dp)
             .clickable { onClick() },
         shape = CircleShape,
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = glassmorphismCardElevation()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(GradientDefaults.MainGradient)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            SoftPurple.copy(alpha = 0.4f),
+                            SoftBlue.copy(alpha = 0.3f),
+                            SoftPink.copy(alpha = 0.2f)
+                        )
+                    )
+                )
                 .rotate(rotation),
             contentAlignment = Alignment.Center
         ) {
@@ -101,7 +113,13 @@ fun EqualizerVisualization(
                     .width(8.dp)
                     .height((40 * animatedHeight).dp)
                     .background(
-                        brush = GradientDefaults.ProgressGradient,
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                SoftPurple,
+                                SoftBlue,
+                                SoftTeal
+                            )
+                        ),
                         shape = RoundedCornerShape(4.dp)
                     )
             )
@@ -124,13 +142,13 @@ fun CircularProgressPlayer(
             modifier = Modifier.fillMaxSize()
         ) {
             drawCircle(
-                color = ProgressBarInactive,
+                color = GlassMedium,
                 radius = size.minDimension / 2,
                 style = Stroke(width = 6.dp.toPx(), cap = StrokeCap.Round)
             )
 
             drawArc(
-                color = ProgressGradientStart,
+                color = SoftPurple,
                 startAngle = -90f,
                 sweepAngle = 360f * progress,
                 useCenter = false,
@@ -147,7 +165,15 @@ fun CircularProgressPlayer(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(GradientDefaults.ButtonGradient, CircleShape),
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                SoftPurple.copy(alpha = 0.8f),
+                                SoftBlue.copy(alpha = 0.6f)
+                            )
+                        ),
+                        CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -168,10 +194,30 @@ fun GenreChip(
     onClick: () -> Unit = {}
 ) {
     val backgroundColor = when (genre.lowercase()) {
-        "rock" -> GradientDefaults.RockGradient
-        "pop" -> GradientDefaults.PopGradient
-        "electronic" -> GradientDefaults.ElectronicGradient
-        else -> GradientDefaults.CardGradient
+        "rock" -> Brush.horizontalGradient(
+            colors = listOf(
+                Color(0xFFDC2626).copy(alpha = 0.4f),
+                Color(0xFFEF4444).copy(alpha = 0.3f)
+            )
+        )
+        "pop" -> Brush.horizontalGradient(
+            colors = listOf(
+                SoftPink.copy(alpha = 0.4f),
+                SoftPurple.copy(alpha = 0.3f)
+            )
+        )
+        "electronic" -> Brush.horizontalGradient(
+            colors = listOf(
+                SoftTeal.copy(alpha = 0.4f),
+                SoftBlue.copy(alpha = 0.3f)
+            )
+        )
+        else -> Brush.horizontalGradient(
+            colors = listOf(
+                GlassMedium,
+                GlassLight
+            )
+        )
     }
 
     Card(
@@ -180,8 +226,8 @@ fun GenreChip(
             .padding(4.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 6.dp else 2.dp
+        elevation = glassmorphismCardElevation(
+            defaultElevation = if (isSelected) 8.dp else 4.dp
         )
     ) {
         Box(
@@ -218,16 +264,24 @@ fun VolumeSlider(
             modifier = Modifier.size(20.dp)
         )
 
-        Slider(
-            value = volume,
-            onValueChange = onVolumeChange,
+        Card(
             modifier = Modifier.weight(1f),
-            colors = SliderDefaults.colors(
-                thumbColor = ProgressGradientStart,
-                activeTrackColor = ProgressGradientStart,
-                inactiveTrackColor = ProgressBarInactive
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        ) {
+            Slider(
+                value = volume,
+                onValueChange = onVolumeChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = SliderDefaults.colors(
+                    thumbColor = Color.White,
+                    activeTrackColor = SoftPurple,
+                    inactiveTrackColor = GlassMedium
+                )
             )
-        )
+        }
 
         Icon(
             Icons.Default.VolumeUp,
@@ -253,12 +307,12 @@ fun PlaylistCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = glassmorphismCardElevation()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(GradientDefaults.CardGradient)
+                .glassCard(alpha = 0.1f, cornerRadius = 16.dp)
                 .padding(16.dp)
         ) {
             Column(
@@ -289,12 +343,22 @@ fun PlaylistCard(
                         )
                     }
 
-                    Icon(
-                        Icons.Default.PlayArrow,
-                        contentDescription = "Play Playlist",
-                        tint = AccentGreen,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    IconButton(
+                        onClick = onClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                SoftGreen.copy(alpha = 0.3f),
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.PlayArrow,
+                            contentDescription = "Play Playlist",
+                            tint = SoftGreen,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
                 Row(
@@ -314,13 +378,13 @@ fun PlaylistCard(
                         Icon(
                             Icons.Default.Favorite,
                             contentDescription = "Favorite",
-                            tint = AccentPink,
+                            tint = SoftPink,
                             modifier = Modifier.size(16.dp)
                         )
                         Icon(
                             Icons.Default.Download,
                             contentDescription = "Downloaded",
-                            tint = AccentGreen,
+                            tint = SoftGreen,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -344,12 +408,20 @@ fun ArtistCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = glassmorphismCardElevation()
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(GradientDefaults.MainGradient)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            SoftPurple.copy(alpha = 0.3f),
+                            SoftBlue.copy(alpha = 0.2f),
+                            SoftTeal.copy(alpha = 0.1f)
+                        )
+                    )
+                )
         ) {
             Column(
                 modifier = Modifier
@@ -362,7 +434,12 @@ fun ArtistCard(
                     modifier = Modifier
                         .size(80.dp)
                         .background(
-                            brush = GradientDefaults.GlassGradient,
+                            brush = Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.2f),
+                                    Color.White.copy(alpha = 0.1f)
+                                )
+                            ),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -393,5 +470,63 @@ fun ArtistCard(
                 )
             }
         }
+    }
+}
+
+// Additional glassmorphism utility functions
+@Composable
+fun glassmorphismCardElevation(
+    defaultElevation: Dp = 8.dp,
+    pressedElevation: Dp = 12.dp,
+    focusedElevation: Dp = 10.dp,
+    hoveredElevation: Dp = 10.dp,
+    draggedElevation: Dp = 16.dp,
+    disabledElevation: Dp = 0.dp
+): CardElevation = CardDefaults.cardElevation(
+    defaultElevation = defaultElevation,
+    pressedElevation = pressedElevation,
+    focusedElevation = focusedElevation,
+    hoveredElevation = hoveredElevation,
+    draggedElevation = draggedElevation,
+    disabledElevation = disabledElevation
+)
+
+@Composable
+fun GlassFloatingActionButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = Color.Transparent,
+    content: @Composable () -> Unit
+) {
+    FloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = containerColor,
+        elevation = FloatingActionButtonDefaults.elevation(0.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .glassCard(alpha = 0.15f, cornerRadius = 28.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+fun GlassIconButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    content: @Composable () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = modifier.glassCard(alpha = 0.12f, cornerRadius = 24.dp),
+        enabled = enabled
+    ) {
+        content()
     }
 }

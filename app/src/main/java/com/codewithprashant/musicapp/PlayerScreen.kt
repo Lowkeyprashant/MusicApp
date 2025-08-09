@@ -1,3 +1,4 @@
+// PlayerScreen.kt - Fixed Version with All Errors Resolved
 package com.codewithprashant.musicapp
 
 import androidx.compose.animation.*
@@ -12,20 +13,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.sp
 import kotlin.math.cos
 import kotlin.math.sin
+import com.codewithprashant.musicapp.ui.theme.*
 
 @Composable
 fun PlayerScreen(
@@ -46,12 +44,12 @@ fun PlayerScreen(
 
     val backgroundGradient = Brush.radialGradient(
         colors = listOf(
-            Color(0xFF1A1A2E),
-            Color(0xFF16213E),
-            Color(0xFF0F3460),
-            Color(0xFF000000)
+            DeepNavy,
+            MidnightBlue,
+            DarkCharcoal,
+            DeepNavy
         ),
-        radius = 1000f
+        radius = 1200f
     )
 
     Box(
@@ -67,7 +65,7 @@ fun PlayerScreen(
                 onMoreClick = { showQueue = true }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             AlbumArtSection(
                 song = song,
@@ -114,7 +112,7 @@ fun PlayerScreen(
                 onShareClick = { }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
         }
 
         if (showLyrics) {
@@ -146,45 +144,41 @@ fun PlayerTopBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(20.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(
             onClick = onBackClick,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
+                .size(48.dp)
+                .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
         ) {
             Icon(
                 Icons.Rounded.KeyboardArrowDown,
                 contentDescription = "Back",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(24.dp)
             )
         }
 
         Text(
             text = "Now Playing",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            color = TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
         )
 
         IconButton(
             onClick = onMoreClick,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
+                .size(48.dp)
+                .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
         ) {
             Icon(
                 Icons.Rounded.QueueMusic,
                 contentDescription = "Queue",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(24.dp)
             )
         }
@@ -202,14 +196,14 @@ fun AlbumArtSection(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
+            animation = tween(25000, easing = LinearEasing),
             repeatMode = androidx.compose.animation.core.RepeatMode.Restart
         ),
         label = "rotation"
     )
 
     val scale by animateFloatAsState(
-        targetValue = if (isPlaying) 1.1f else 1f,
+        targetValue = if (isPlaying) 1.05f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -221,84 +215,115 @@ fun AlbumArtSection(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center
     ) {
-        // Glow effect background
+        // Ambient glow background
         Box(
             modifier = Modifier
-                .size(320.dp)
+                .size(360.dp)
                 .background(
                     Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFF6366F1).copy(alpha = 0.2f), // Reduced alpha for subtlety
-                            Color(0xFF8B5CF6).copy(alpha = 0.2f),
-                            Color(0xFFEC4899).copy(alpha = 0.1f),
+                            SoftPurple.copy(alpha = 0.15f),
+                            SoftBlue.copy(alpha = 0.12f),
+                            SoftPink.copy(alpha = 0.08f),
                             Color.Transparent
                         ),
                         radius = 400f
                     ),
                     CircleShape
-                ) // Removed blur, as radial gradient with low alpha creates a soft glow
+                )
         )
 
-        // Vinyl record effect
-        Box(
+        // Main album art container
+        Card(
             modifier = Modifier
-                .size(280.dp)
-                .scale(scale)
-                .rotate(if (isPlaying) rotation else 0f)
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFF1A1A2E).copy(alpha = 0.8f), // Darker, more solid look
-                            Color(0xFF16213E).copy(alpha = 0.9f),
-                            Color(0xFF0F3460) // Solid base
-                        )
-                    ), // Use brush for a slight gradient effect
-                    CircleShape
-                )
-                .border(2.dp, Color.White.copy(alpha = 0.1f), CircleShape),
-            contentAlignment = Alignment.Center
+                .size(300.dp)
+                .graphicsLayer(scaleX = scale, scaleY = scale),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 20.dp,
+                pressedElevation = 24.dp
+            )
         ) {
-            // Inner album art
             Box(
                 modifier = Modifier
-                    .size(200.dp)
+                    .fillMaxSize()
                     .background(
                         Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFF667EEA),
-                                Color(0xFF764BA2).copy(alpha = 0.8f),
-                                Color(0xFFF093FB).copy(alpha = 0.6f)
-                            ) // More vibrant album art colors
-                        ),
-                        CircleShape
+                                SoftPurple.copy(alpha = 0.4f),
+                                SoftBlue.copy(alpha = 0.3f),
+                                SoftPink.copy(alpha = 0.25f),
+                                SoftTeal.copy(alpha = 0.2f)
+                            )
+                        )
                     )
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape),
+                    .border(
+                        width = 2.dp,
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.3f),
+                                Color.White.copy(alpha = 0.1f)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Rounded.MusicNote,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(60.dp)
+                // Inner album art
+                Box(
+                    modifier = Modifier
+                        .size(220.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    SoftBlue.copy(alpha = 0.6f),
+                                    SoftPurple.copy(alpha = 0.4f),
+                                    SoftTeal.copy(alpha = 0.3f)
+                                )
+                            ),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.2f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Rounded.MusicNote,
+                        contentDescription = null,
+                        tint = TextPrimary,
+                        modifier = Modifier.size(64.dp)
+                    )
+                }
+
+                // Center dot
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.4f),
+                            CircleShape
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.6f),
+                            CircleShape
+                        )
                 )
             }
-
-            // Center dot
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .background(color = Color.White.copy(alpha = 0.3f), shape = CircleShape)
-            )
         }
 
         // Floating particles effect
-        repeat(6) { index ->
-            val angle = (index * 60f)
+        repeat(8) { index ->
+            val angle = (index * 45f)
             val animatedRadius by infiniteTransition.animateFloat(
-                initialValue = 140f,
-                targetValue = 160f,
+                initialValue = 160f,
+                targetValue = 180f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(2000 + index * 200, easing = EaseInOutSine),
+                    animation = tween(3000 + index * 300, easing = EaseInOutSine),
                     repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
                 ),
                 label = "particle_$index"
@@ -311,9 +336,9 @@ fun AlbumArtSection(
             Box(
                 modifier = Modifier
                     .offset(x.dp, y.dp)
-                    .size(8.dp)
+                    .size(6.dp)
                     .background(
-                        color = Color.White.copy(alpha = 0.4f),
+                        Color.White.copy(alpha = 0.3f),
                         CircleShape
                     )
             )
@@ -335,8 +360,8 @@ fun SongInfoSection(
     ) {
         Text(
             text = song?.title ?: "Unknown Song",
-            color = Color.White,
-            fontSize = 24.sp,
+            color = TextPrimary,
+            fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
             maxLines = 2,
@@ -347,30 +372,29 @@ fun SongInfoSection(
 
         Text(
             text = song?.artist ?: "Unknown Artist",
-            color = Color.White.copy(alpha = 0.7f),
-            fontSize = 16.sp,
+            color = TextSecondary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(24.dp)
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             IconButton(
                 onClick = onLyricsClick,
                 modifier = Modifier
-                    .background(
-                        color = Color.White.copy(alpha = 0.1f),
-                        CircleShape
-                    )
+                    .size(48.dp)
+                    .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
             ) {
                 Icon(
                     Icons.Rounded.Lyrics,
                     contentDescription = "Lyrics",
-                    tint = Color.White,
+                    tint = TextPrimary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -378,20 +402,26 @@ fun SongInfoSection(
             IconButton(
                 onClick = onFavoriteClick,
                 modifier = Modifier
+                    .size(48.dp)
                     .background(
-                        brush = Brush.radialGradient(
+                        Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFEC4899),
-                                Color(0xFFBE185D)
+                                SoftPink.copy(alpha = 0.4f),
+                                SoftPink.copy(alpha = 0.2f)
                             )
                         ),
+                        CircleShape
+                    )
+                    .border(
+                        1.dp,
+                        SoftPink.copy(alpha = 0.3f),
                         CircleShape
                     )
             ) {
                 Icon(
                     Icons.Rounded.Favorite,
                     contentDescription = "Favorite",
-                    tint = Color.White,
+                    tint = SoftPink,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -399,15 +429,27 @@ fun SongInfoSection(
             IconButton(
                 onClick = { },
                 modifier = Modifier
-                    .background(
-                        color = Color.White.copy(alpha = 0.1f),
-                        CircleShape
-                    )
+                    .size(48.dp)
+                    .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
             ) {
                 Icon(
                     Icons.Rounded.Download,
                     contentDescription = "Download",
-                    tint = Color.White,
+                    tint = TextPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            IconButton(
+                onClick = { },
+                modifier = Modifier
+                    .size(48.dp)
+                    .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Share,
+                    contentDescription = "Share",
+                    tint = TextPrimary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -433,12 +475,12 @@ fun ProgressSection(
             modifier = Modifier.fillMaxWidth(),
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
-                activeTrackColor = Color.White,
-                inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                activeTrackColor = SoftPurple,
+                inactiveTrackColor = GlassMedium
             )
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -446,13 +488,15 @@ fun ProgressSection(
         ) {
             Text(
                 text = currentTime,
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 12.sp
+                color = TextSecondary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = totalTime,
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 12.sp
+                color = TextSecondary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium
             )
         }
     }
@@ -479,25 +523,35 @@ fun PlayerControlsSection(
         IconButton(
             onClick = onShuffleToggle,
             modifier = Modifier
+                .size(52.dp)
                 .background(
-                    brush = if (isShuffleEnabled) {
+                    if (isShuffleEnabled) {
                         Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFF6366F1),
-                                Color(0xFF8B5CF6)
+                                SoftBlue.copy(alpha = 0.4f),
+                                SoftBlue.copy(alpha = 0.2f)
                             )
                         )
                     } else {
-                        Brush.radialGradient(colors = listOf(Color.White.copy(alpha = 0.1f), Color.White.copy(alpha = 0.1f))) // Use brush for consistency
+                        Brush.radialGradient(
+                            colors = listOf(
+                                GlassMedium,
+                                GlassLight
+                            )
+                        )
                     },
                     CircleShape
                 )
-                .size(48.dp)
+                .border(
+                    1.dp,
+                    if (isShuffleEnabled) SoftBlue.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.1f),
+                    CircleShape
+                )
         ) {
             Icon(
                 Icons.Rounded.Shuffle,
                 contentDescription = "Shuffle",
-                tint = Color.White,
+                tint = if (isShuffleEnabled) SoftBlue else TextSecondary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -505,62 +559,68 @@ fun PlayerControlsSection(
         IconButton(
             onClick = onPrevious,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
-                .size(56.dp)
+                .size(60.dp)
+                .glassCard(alpha = 0.15f, cornerRadius = 30.dp)
         ) {
             Icon(
                 Icons.Rounded.SkipPrevious,
                 contentDescription = "Previous",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(28.dp)
             )
         }
 
-        FloatingActionButton(
-            onClick = onPlayPause,
-            modifier = Modifier.size(72.dp),
-            containerColor = Color.Transparent,
-            elevation = FloatingActionButtonDefaults.elevation(0.dp)
+        Card(
+            modifier = Modifier.size(80.dp),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White,
-                                Color.White.copy(alpha = 0.8f)
-                            )
-                        ),
-                        CircleShape
-                    ),
-                contentAlignment = Alignment.Center
+            FloatingActionButton(
+                onClick = onPlayPause,
+                modifier = Modifier.fillMaxSize(),
+                containerColor = Color.Transparent,
+                elevation = FloatingActionButtonDefaults.elevation(0.dp)
             ) {
-                Icon(
-                    if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    tint = Color(0xFF1A1A2E),
-                    modifier = Modifier.size(32.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.9f),
+                                    Color.White.copy(alpha = 0.7f)
+                                )
+                            ),
+                            CircleShape
+                        )
+                        .border(
+                            2.dp,
+                            Color.White.copy(alpha = 0.3f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play",
+                        tint = DeepNavy,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
             }
         }
 
         IconButton(
             onClick = onNext,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
-                .size(56.dp)
+                .size(60.dp)
+                .glassCard(alpha = 0.15f, cornerRadius = 30.dp)
         ) {
             Icon(
                 Icons.Rounded.SkipNext,
                 contentDescription = "Next",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -568,25 +628,39 @@ fun PlayerControlsSection(
         IconButton(
             onClick = onRepeatToggle,
             modifier = Modifier
+                .size(52.dp)
                 .background(
-                    brush = when (repeatMode) {
+                    when (repeatMode) {
                         RepeatMode.ONE -> Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFEC4899),
-                                Color(0xFFBE185D)
+                                SoftPink.copy(alpha = 0.4f),
+                                SoftPink.copy(alpha = 0.2f)
                             )
                         )
                         RepeatMode.ALL -> Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFF10B981),
-                                Color(0xFF059669)
+                                SoftGreen.copy(alpha = 0.4f),
+                                SoftGreen.copy(alpha = 0.2f)
                             )
                         )
-                        RepeatMode.OFF -> Brush.radialGradient(colors = listOf(Color.White.copy(alpha = 0.1f), Color.White.copy(alpha = 0.1f)))
+                        RepeatMode.OFF -> Brush.radialGradient(
+                            colors = listOf(
+                                GlassMedium,
+                                GlassLight
+                            )
+                        )
                     },
                     CircleShape
                 )
-                .size(48.dp)
+                .border(
+                    1.dp,
+                    when (repeatMode) {
+                        RepeatMode.ONE -> SoftPink.copy(alpha = 0.3f)
+                        RepeatMode.ALL -> SoftGreen.copy(alpha = 0.3f)
+                        RepeatMode.OFF -> Color.White.copy(alpha = 0.1f)
+                    },
+                    CircleShape
+                )
         ) {
             Icon(
                 when (repeatMode) {
@@ -594,7 +668,11 @@ fun PlayerControlsSection(
                     else -> Icons.Rounded.Repeat
                 },
                 contentDescription = "Repeat",
-                tint = Color.White,
+                tint = when (repeatMode) {
+                    RepeatMode.ONE -> SoftPink
+                    RepeatMode.ALL -> SoftGreen
+                    RepeatMode.OFF -> TextSecondary
+                },
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -618,15 +696,13 @@ fun BottomControlsSection(
         IconButton(
             onClick = onEqualizerClick,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
+                .size(44.dp)
+                .glassCard(alpha = 0.12f, cornerRadius = 22.dp)
         ) {
             Icon(
                 Icons.Rounded.Equalizer,
                 contentDescription = "Equalizer",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -638,8 +714,8 @@ fun BottomControlsSection(
             Icon(
                 Icons.Rounded.VolumeDown,
                 contentDescription = "Volume Down",
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(16.dp)
+                tint = TextSecondary,
+                modifier = Modifier.size(18.dp)
             )
 
             Slider(
@@ -647,34 +723,32 @@ fun BottomControlsSection(
                 onValueChange = onVolumeChange,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 16.dp),
                 colors = SliderDefaults.colors(
                     thumbColor = Color.White,
-                    activeTrackColor = Color.White,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                    activeTrackColor = SoftPurple,
+                    inactiveTrackColor = GlassMedium
                 )
             )
 
             Icon(
                 Icons.Rounded.VolumeUp,
                 contentDescription = "Volume Up",
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(16.dp)
+                tint = TextSecondary,
+                modifier = Modifier.size(18.dp)
             )
         }
 
         IconButton(
             onClick = onShareClick,
             modifier = Modifier
-                .background(
-                    color = Color.White.copy(alpha = 0.1f),
-                    CircleShape
-                )
+                .size(44.dp)
+                .glassCard(alpha = 0.12f, cornerRadius = 22.dp)
         ) {
             Icon(
                 Icons.Rounded.Share,
                 contentDescription = "Share",
-                tint = Color.White,
+                tint = TextPrimary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -689,31 +763,47 @@ fun LyricsOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(DeepNavy.copy(alpha = 0.95f))
             .clickable { onDismiss() },
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(32.dp)
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Text(
-                text = "Lyrics",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Lyrics",
+                        color = TextPrimary,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
 
-            Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
-            Text(
-                text = song?.lyrics?.ifEmpty { "No lyrics available for this song" }
-                    ?: "No lyrics available",
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 16.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 24.sp
-            )
+                    Text(
+                        text = song?.lyrics?.ifEmpty { "No lyrics available for this song" }
+                            ?: "No lyrics available",
+                        color = TextSecondary,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 28.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -725,16 +815,46 @@ fun QueueOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(DeepNavy.copy(alpha = 0.95f))
             .clickable { onDismiss() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Queue Coming Soon",
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Queue",
+                        color = TextPrimary,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Coming Soon",
+                        color = TextSecondary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -745,16 +865,46 @@ fun EqualizerOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(DeepNavy.copy(alpha = 0.95f))
             .clickable { onDismiss() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = "Equalizer Coming Soon",
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Equalizer",
+                        color = TextPrimary,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Coming Soon",
+                        color = TextSecondary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
     }
 }
 

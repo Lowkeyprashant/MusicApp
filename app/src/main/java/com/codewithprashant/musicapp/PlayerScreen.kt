@@ -1,4 +1,4 @@
-// PlayerScreen.kt - Fixed Version with All Errors Resolved
+// PlayerScreen.kt - Updated with Album Art and Real Song Data
 package com.codewithprashant.musicapp
 
 import androidx.compose.animation.*
@@ -8,19 +8,26 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.*
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlin.math.cos
 import kotlin.math.sin
 import com.codewithprashant.musicapp.ui.theme.*
@@ -86,7 +93,7 @@ fun PlayerScreen(
             ProgressSection(
                 progress = playerState.progress,
                 currentTime = formatTime(playerState.currentPosition),
-                totalTime = song?.duration ?: "0:00",
+                totalTime = formatTime(playerState.duration),
                 onSeek = onSeek
             )
 
@@ -176,7 +183,7 @@ fun PlayerTopBar(
                 .glassCard(alpha = 0.12f, cornerRadius = 24.dp)
         ) {
             Icon(
-                Icons.Rounded.QueueMusic,
+                Icons.AutoMirrored.Rounded.QueueMusic,
                 contentDescription = "Queue",
                 tint = TextPrimary,
                 modifier = Modifier.size(24.dp)
@@ -191,16 +198,22 @@ fun AlbumArtSection(
     isPlaying: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val infiniteTransition = rememberInfiniteTransition(label = "album_rotation")
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(25000, easing = LinearEasing),
-            repeatMode = androidx.compose.animation.core.RepeatMode.Restart
-        ),
-        label = "rotation"
-    )
+
+    val rotation by if (isPlaying) {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(25000, easing = LinearEasing),
+                repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+            ),
+            label = "rotation"
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isPlaying) 1.05f else 1f,
@@ -237,7 +250,11 @@ fun AlbumArtSection(
         Card(
             modifier = Modifier
                 .size(300.dp)
-                .graphicsLayer(scaleX = scale, scaleY = scale),
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    rotationZ = rotation
+                ),
             shape = CircleShape,
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(
@@ -246,60 +263,62 @@ fun AlbumArtSection(
             )
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                SoftPurple.copy(alpha = 0.4f),
-                                SoftBlue.copy(alpha = 0.3f),
-                                SoftPink.copy(alpha = 0.25f),
-                                SoftTeal.copy(alpha = 0.2f)
-                            )
-                        )
-                    )
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                Color.White.copy(alpha = 0.3f),
-                                Color.White.copy(alpha = 0.1f)
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                // Inner album art
-                Box(
-                    modifier = Modifier
-                        .size(220.dp)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    SoftBlue.copy(alpha = 0.6f),
-                                    SoftPurple.copy(alpha = 0.4f),
-                                    SoftTeal.copy(alpha = 0.3f)
-                                )
-                            ),
-                            CircleShape
-                        )
-                        .border(
-                            1.dp,
-                            Color.White.copy(alpha = 0.2f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Rounded.MusicNote,
-                        contentDescription = null,
-                        tint = TextPrimary,
-                        modifier = Modifier.size(64.dp)
+                // Album art image
+                if (song?.albumArt?.isNotEmpty() == true) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(song.albumArt)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Album Art",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(id = R.drawable.default_album_art),
+                        placeholder = painterResource(id = R.drawable.default_album_art)
                     )
+                } else {
+                    // Default album art with gradient
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        SoftPurple.copy(alpha = 0.4f),
+                                        SoftBlue.copy(alpha = 0.3f),
+                                        SoftPink.copy(alpha = 0.25f),
+                                        SoftTeal.copy(alpha = 0.2f)
+                                    )
+                                ),
+                                CircleShape
+                            )
+                            .border(
+                                width = 2.dp,
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color.White.copy(alpha = 0.3f),
+                                        Color.White.copy(alpha = 0.1f)
+                                    )
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Rounded.MusicNote,
+                            contentDescription = null,
+                            tint = TextPrimary,
+                            modifier = Modifier.size(64.dp)
+                        )
+                    }
                 }
 
-                // Center dot
+                // Center dot (vinyl record style)
                 Box(
                     modifier = Modifier
                         .size(24.dp)
@@ -316,32 +335,34 @@ fun AlbumArtSection(
             }
         }
 
-        // Floating particles effect
-        repeat(8) { index ->
-            val angle = (index * 45f)
-            val animatedRadius by infiniteTransition.animateFloat(
-                initialValue = 160f,
-                targetValue = 180f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(3000 + index * 300, easing = EaseInOutSine),
-                    repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-                ),
-                label = "particle_$index"
-            )
+        // Floating particles effect (only when playing)
+        if (isPlaying) {
+            repeat(8) { index ->
+                val angle = (index * 45f)
+                val animatedRadius by infiniteTransition.animateFloat(
+                    initialValue = 160f,
+                    targetValue = 180f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(3000 + index * 300, easing = EaseInOutSine),
+                        repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
+                    ),
+                    label = "particle_$index"
+                )
 
-            val angleRadians = Math.toRadians(angle.toDouble())
-            val x = animatedRadius * cos(angleRadians).toFloat()
-            val y = animatedRadius * sin(angleRadians).toFloat()
+                val angleRadians = Math.toRadians(angle.toDouble())
+                val x = animatedRadius * cos(angleRadians).toFloat()
+                val y = animatedRadius * sin(angleRadians).toFloat()
 
-            Box(
-                modifier = Modifier
-                    .offset(x.dp, y.dp)
-                    .size(6.dp)
-                    .background(
-                        Color.White.copy(alpha = 0.3f),
-                        CircleShape
-                    )
-            )
+                Box(
+                    modifier = Modifier
+                        .offset(x.dp, y.dp)
+                        .size(6.dp)
+                        .background(
+                            Color.White.copy(alpha = 0.3f),
+                            CircleShape
+                        )
+                )
+            }
         }
     }
 }
@@ -359,7 +380,7 @@ fun SongInfoSection(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = song?.title ?: "Unknown Song",
+            text = song?.title ?: "No Song Selected",
             color = TextPrimary,
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
@@ -379,6 +400,19 @@ fun SongInfoSection(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+
+        if (song?.album?.isNotEmpty() == true) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = song.album,
+                color = TextTertiary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -712,7 +746,7 @@ fun BottomControlsSection(
             modifier = Modifier.weight(1f)
         ) {
             Icon(
-                Icons.Rounded.VolumeDown,
+                Icons.AutoMirrored.Rounded.VolumeDown,
                 contentDescription = "Volume Down",
                 tint = TextSecondary,
                 modifier = Modifier.size(18.dp)
@@ -732,7 +766,7 @@ fun BottomControlsSection(
             )
 
             Icon(
-                Icons.Rounded.VolumeUp,
+                Icons.AutoMirrored.Rounded.VolumeUp,
                 contentDescription = "Volume Up",
                 tint = TextSecondary,
                 modifier = Modifier.size(18.dp)
@@ -911,5 +945,5 @@ fun EqualizerOverlay(
 private fun formatTime(milliseconds: Long): String {
     val seconds = (milliseconds / 1000) % 60
     val minutes = (milliseconds / (1000 * 60)) % 60
-    return String.format("%d:%02d", minutes, seconds)
+    return "${minutes}:${seconds.toString().padStart(2, '0')}"
 }

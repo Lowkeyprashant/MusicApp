@@ -78,7 +78,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.MusicApp"
-            android:screenOrientation="unspecified">
+            android:screenOrientation="unspecified"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -90,6 +91,25 @@
                 <data android:scheme="musicapp" />
             </intent-filter>
         </activity>
+
+
+        <service
+            android:name=".MediaPlayerService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+
+
+        <receiver android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
 
     </application>
 

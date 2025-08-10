@@ -1,12 +1,19 @@
+// MusicViewModel.kt - Updated with Media Service Integration
 package com.codewithprashant.musicapp
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 
 data class MusicPlayerState(
     val currentSong: Song? = null,
@@ -18,14 +25,17 @@ data class MusicPlayerState(
     val volume: Float = 0.7f,
     val isShuffleEnabled: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
-    val playbackSpeed: Float = 1.0f
+    val playbackSpeed: Float = 1.0f,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 data class PlaylistState(
     val currentPlaylist: List<Song> = emptyList(),
     val currentIndex: Int = 0,
     val queue: List<Song> = emptyList(),
-    val history: List<Song> = emptyList()
+    val history: List<Song> = emptyList(),
+    val shuffledIndices: List<Int> = emptyList()
 )
 
 data class LibraryState(
@@ -36,7 +46,9 @@ data class LibraryState(
     val favorites: List<Song> = emptyList(),
     val recentlyPlayed: List<Song> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val hasPermission: Boolean = false,
+    val scanProgress: Float = 0f
 )
 
 data class UIState(
@@ -49,10 +61,30 @@ data class UIState(
     val showEqualizer: Boolean = false
 )
 
+class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val context = getApplication<Application>()
+    private val musicScanner = MusicScanner(context)
 
-class MusicViewModel : ViewModel() {
+    // Service connection
+    private var mediaPlayerService: MediaPlayerService? = null
+    private var isServiceBound = false
 
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as MediaPlayerService.MediaPlayerBinder
+            mediaPlayerService = binder.getService()
+            isServiceBound = true
+            observeServiceState()
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            mediaPlayerService = null
+            isServiceBound = false
+        }
+    }
+
+    // State flows
     private val _playerState = MutableStateFlow(MusicPlayerState())
     val playerState: StateFlow<MusicPlayerState> = _playerState.asStateFlow()
 
@@ -66,164 +98,229 @@ class MusicViewModel : ViewModel() {
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
 
     init {
-        loadSampleData()
-        startProgressUpdater()
+        checkPermissionsAndStartService()
     }
 
-    private fun loadSampleData() {
-        val sampleSongs = listOf(
-            Song(
-                title = "Blinding Lights",
-                artist = "The Weeknd",
-                album = "After Hours",
-                duration = "3:20",
-                albumArt = ""
-            ),
-            Song(
-                title = "Watermelon Sugar",
-                artist = "Harry Styles",
-                album = "Fine Line",
-                duration = "2:54",
-                albumArt = ""
-            ),
-            Song(
-                title = "Levitating",
-                artist = "Dua Lipa",
-                album = "Future Nostalgia",
-                duration = "3:23",
-                albumArt = ""
-            ),
-            Song(
-                title = "Good 4 U",
-                artist = "Olivia Rodrigo",
-                album = "SOUR",
-                duration = "2:58",
-                albumArt = ""
-            ),
-            Song(
-                title = "Stay",
-                artist = "The Kid LAROI & Justin Bieber",
-                album = "F*CK LOVE 3",
-                duration = "2:21",
-                albumArt = ""
-            ),
-            Song(
-                title = "Anti-Hero",
-                artist = "Taylor Swift",
-                album = "Midnights",
-                duration = "3:20",
-                albumArt = ""
-            ),
-            Song(
-                title = "As It Was",
-                artist = "Harry Styles",
-                album = "Harry's House",
-                duration = "2:47",
-                albumArt = ""
-            ),
-            Song(
-                title = "Heat Waves",
-                artist = "Glass Animals",
-                album = "Dreamland",
-                duration = "3:58",
-                albumArt = ""
-            )
-        )
+    private fun checkPermissionsAndStartService() {
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        ) == PackageManager.PERMISSION_GRANTED
 
-        val samplePlaylists = listOf(
-            Playlist(
-                id = "1",
-                name = "My Favorites",
-                songs = sampleSongs.take(5),
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            ),
-            Playlist(
-                id = "2",
-                name = "Workout Mix",
-                songs = sampleSongs.drop(2).take(4),
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            ),
-            Playlist(
-                id = "3",
-                name = "Chill Vibes",
-                songs = sampleSongs.drop(1).take(3),
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            )
-        )
+        _libraryState.value = _libraryState.value.copy(hasPermission = hasPermission)
 
-        val sampleArtists = listOf(
-            Artist(id = "1", name = "The Weeknd", albumCount = 5, songCount = 52),
-            Artist(id = "2", name = "Harry Styles", albumCount = 3, songCount = 34),
-            Artist(id = "3", name = "Dua Lipa", albumCount = 2, songCount = 28),
-            Artist(id = "4", name = "Taylor Swift", albumCount = 10, songCount = 156),
-            Artist(id = "5", name = "Olivia Rodrigo", albumCount = 1, songCount = 11)
-        )
-
-        _libraryState.value = _libraryState.value.copy(
-            songs = sampleSongs,
-            playlists = samplePlaylists,
-            artists = sampleArtists,
-            recentlyPlayed = sampleSongs.take(3)
-        )
-
-        _playlistState.value = _playlistState.value.copy(
-            currentPlaylist = sampleSongs
-        )
-    }
-
-    fun playPause() {
-        val currentState = _playerState.value
-        if (currentState.currentSong == null) {
-            playSong(_libraryState.value.songs.firstOrNull())
-        } else {
-            _playerState.value = currentState.copy(
-                isPlaying = !currentState.isPlaying,
-                isPaused = currentState.isPlaying
-            )
+        if (hasPermission) {
+            startMediaService()
+            loadMusicLibrary()
         }
     }
 
-    fun playSong(song: Song?) {
-        song?.let {
-            _playerState.value = _playerState.value.copy(
-                currentSong = it,
-                isPlaying = true,
-                isPaused = false,
-                currentPosition = 0L,
-                duration = parseDurationToMillis(it.duration),
-                progress = 0f
-            )
+    fun requestPermissions() {
+        // This will be called from the UI when permission is granted
+        checkPermissionsAndStartService()
+    }
 
-            val currentPlaylist = _playlistState.value.currentPlaylist
-            val index = currentPlaylist.indexOf(song)
-            if (index != -1) {
-                _playlistState.value = _playlistState.value.copy(
-                    currentIndex = index
+    private fun startMediaService() {
+        val serviceIntent = Intent(context, MediaPlayerService::class.java)
+        context.startService(serviceIntent)
+        context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    private fun observeServiceState() {
+        mediaPlayerService?.let { service ->
+            viewModelScope.launch {
+                // Observe service state flows
+                launch {
+                    service.isPlaying.collect { isPlaying ->
+                        _playerState.value = _playerState.value.copy(isPlaying = isPlaying)
+                    }
+                }
+
+                launch {
+                    service.currentPosition.collect { position ->
+                        val duration = _playerState.value.duration
+                        val progress = if (duration > 0) position.toFloat() / duration else 0f
+                        _playerState.value = _playerState.value.copy(
+                            currentPosition = position,
+                            progress = progress
+                        )
+                    }
+                }
+
+                launch {
+                    service.duration.collect { duration ->
+                        _playerState.value = _playerState.value.copy(duration = duration)
+                    }
+                }
+
+                launch {
+                    service.currentSong.collect { song ->
+                        if (song != null) {
+                            _playerState.value = _playerState.value.copy(currentSong = song)
+                            addToRecentlyPlayed(song)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun loadMusicLibrary() {
+        viewModelScope.launch {
+            _libraryState.value = _libraryState.value.copy(isLoading = true, scanProgress = 0f)
+
+            try {
+                // Scan for songs
+                _libraryState.value = _libraryState.value.copy(scanProgress = 0.2f)
+                val songs = musicScanner.scanForMusic()
+
+                // Scan for artists
+                _libraryState.value = _libraryState.value.copy(scanProgress = 0.5f)
+                val artists = musicScanner.scanForArtists()
+
+                // Scan for albums
+                _libraryState.value = _libraryState.value.copy(scanProgress = 0.8f)
+                val albums = musicScanner.scanForAlbums()
+
+                // Create default playlists
+                val defaultPlaylists = createDefaultPlaylists(songs)
+
+                _libraryState.value = _libraryState.value.copy(
+                    songs = songs,
+                    artists = artists,
+                    albums = albums,
+                    playlists = defaultPlaylists,
+                    recentlyPlayed = songs.take(5), // Show first 5 as recently played initially
+                    isLoading = false,
+                    scanProgress = 1f,
+                    error = null
+                )
+
+                // Set up initial playlist
+                _playlistState.value = _playlistState.value.copy(currentPlaylist = songs)
+
+            } catch (e: Exception) {
+                _libraryState.value = _libraryState.value.copy(
+                    isLoading = false,
+                    error = "Error loading music: ${e.message}"
                 )
             }
         }
     }
 
-    fun seekTo(position: Float) {
-        val currentState = _playerState.value
-        val newPosition = (currentState.duration * position).toLong()
-        _playerState.value = currentState.copy(
-            currentPosition = newPosition,
-            progress = position
+    private fun createDefaultPlaylists(songs: List<Song>): List<Playlist> {
+        val recentSongs = songs.sortedByDescending { it.dateAdded }.take(20)
+        val favoriteSongs = songs.shuffled().take(15) // Random songs as favorites initially
+
+        return listOf(
+            Playlist(
+                id = "recently_added",
+                name = "Recently Added",
+                songs = recentSongs,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                isUserCreated = false
+            ),
+            Playlist(
+                id = "favorites",
+                name = "My Favorites",
+                songs = favoriteSongs,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                isUserCreated = false
+            )
         )
+    }
+
+    fun playSong(song: Song?) {
+        song?.let {
+            mediaPlayerService?.playSong(it)
+            updateCurrentPlaylistIndex(it)
+        }
+    }
+
+    fun playPause() {
+        val currentState = _playerState.value
+        if (currentState.currentSong == null) {
+            // Play first song if none is selected
+            val firstSong = _libraryState.value.songs.firstOrNull()
+            firstSong?.let { playSong(it) }
+        } else {
+            if (currentState.isPlaying) {
+                mediaPlayerService?.pauseMusic()
+            } else {
+                mediaPlayerService?.resumeMusic()
+            }
+        }
+    }
+
+    fun skipToNext() {
+        val playlistState = _playlistState.value
+        val playerState = _playerState.value
+
+        if (playlistState.currentPlaylist.isNotEmpty()) {
+            val nextIndex = if (playerState.isShuffleEnabled) {
+                getNextShuffledIndex()
+            } else {
+                when (playerState.repeatMode) {
+                    RepeatMode.ONE -> playlistState.currentIndex // Stay on same song
+                    RepeatMode.ALL -> (playlistState.currentIndex + 1) % playlistState.currentPlaylist.size
+                    RepeatMode.OFF -> {
+                        val next = playlistState.currentIndex + 1
+                        if (next < playlistState.currentPlaylist.size) next else -1
+                    }
+                }
+            }
+
+            if (nextIndex >= 0) {
+                val nextSong = playlistState.currentPlaylist[nextIndex]
+                _playlistState.value = playlistState.copy(currentIndex = nextIndex)
+                mediaPlayerService?.playSong(nextSong)
+            }
+        }
+    }
+
+    fun skipToPrevious() {
+        val playlistState = _playlistState.value
+        val currentPosition = _playerState.value.currentPosition
+
+        // If more than 3 seconds into song, restart current song
+        if (currentPosition > 3000) {
+            mediaPlayerService?.seekTo(0)
+            return
+        }
+
+        if (playlistState.currentPlaylist.isNotEmpty()) {
+            val prevIndex = if (playlistState.currentIndex > 0) {
+                playlistState.currentIndex - 1
+            } else {
+                playlistState.currentPlaylist.size - 1
+            }
+
+            val prevSong = playlistState.currentPlaylist[prevIndex]
+            _playlistState.value = playlistState.copy(currentIndex = prevIndex)
+            mediaPlayerService?.playSong(prevSong)
+        }
+    }
+
+    fun seekTo(position: Float) {
+        val duration = _playerState.value.duration
+        val seekPosition = (duration * position).toLong()
+        mediaPlayerService?.seekTo(seekPosition)
     }
 
     fun setVolume(volume: Float) {
         _playerState.value = _playerState.value.copy(volume = volume)
+        // Implement volume control in service if needed
     }
 
     fun toggleShuffle() {
-        _playerState.value = _playerState.value.copy(
-            isShuffleEnabled = !_playerState.value.isShuffleEnabled
-        )
+        val newShuffleState = !_playerState.value.isShuffleEnabled
+        _playerState.value = _playerState.value.copy(isShuffleEnabled = newShuffleState)
+
+        if (newShuffleState) {
+            generateShuffledIndices()
+        }
     }
 
     fun toggleRepeat() {
@@ -236,39 +333,53 @@ class MusicViewModel : ViewModel() {
         _playerState.value = _playerState.value.copy(repeatMode = nextMode)
     }
 
-    fun skipToNext() {
+    private fun generateShuffledIndices() {
+        val playlistSize = _playlistState.value.currentPlaylist.size
+        val shuffledIndices = (0 until playlistSize).shuffled()
+        _playlistState.value = _playlistState.value.copy(shuffledIndices = shuffledIndices)
+    }
+
+    private fun getNextShuffledIndex(): Int {
         val playlistState = _playlistState.value
-        val playerState = _playerState.value
+        val currentIndex = playlistState.currentIndex
+        val shuffledIndices = playlistState.shuffledIndices
 
-        if (playlistState.currentPlaylist.isNotEmpty()) {
-            val nextIndex = if (playerState.isShuffleEnabled) {
-                playlistState.currentPlaylist.indices.random()
-            } else {
-                (playlistState.currentIndex + 1) % playlistState.currentPlaylist.size
-            }
+        if (shuffledIndices.isEmpty()) {
+            generateShuffledIndices()
+            return _playlistState.value.shuffledIndices.firstOrNull() ?: 0
+        }
 
-            val nextSong = playlistState.currentPlaylist[nextIndex]
-            playSong(nextSong)
-
-            _playlistState.value = playlistState.copy(currentIndex = nextIndex)
+        val currentShuffledPosition = shuffledIndices.indexOf(currentIndex)
+        return if (currentShuffledPosition < shuffledIndices.size - 1) {
+            shuffledIndices[currentShuffledPosition + 1]
+        } else {
+            shuffledIndices.first() // Loop back to beginning
         }
     }
 
-    fun skipToPrevious() {
+    private fun updateCurrentPlaylistIndex(song: Song) {
         val playlistState = _playlistState.value
-
-        if (playlistState.currentPlaylist.isNotEmpty()) {
-            val prevIndex = if (playlistState.currentIndex > 0) {
-                playlistState.currentIndex - 1
-            } else {
-                playlistState.currentPlaylist.size - 1
-            }
-
-            val prevSong = playlistState.currentPlaylist[prevIndex]
-            playSong(prevSong)
-
-            _playlistState.value = playlistState.copy(currentIndex = prevIndex)
+        val index = playlistState.currentPlaylist.indexOf(song)
+        if (index != -1) {
+            _playlistState.value = playlistState.copy(currentIndex = index)
         }
+    }
+
+    private fun addToRecentlyPlayed(song: Song) {
+        val currentRecentlyPlayed = _libraryState.value.recentlyPlayed.toMutableList()
+
+        // Remove if already in list
+        currentRecentlyPlayed.removeAll { it.id == song.id }
+
+        // Add to beginning
+        currentRecentlyPlayed.add(0, song)
+
+        // Keep only last 20 songs
+        if (currentRecentlyPlayed.size > 20) {
+            currentRecentlyPlayed.removeAt(currentRecentlyPlayed.size - 1)
+        }
+
+        _libraryState.value = _libraryState.value.copy(recentlyPlayed = currentRecentlyPlayed)
     }
 
     fun updateSelectedTab(tab: Int) {
@@ -316,61 +427,49 @@ class MusicViewModel : ViewModel() {
         )
     }
 
-    private fun startProgressUpdater() {
-        viewModelScope.launch {
-            while (true) {
-                val currentState = _playerState.value
-                if (currentState.isPlaying && currentState.duration > 0) {
-                    val newPosition = currentState.currentPosition + 1000
-                    val newProgress = newPosition.toFloat() / currentState.duration
-
-                    if (newPosition >= currentState.duration) {
-                        handleSongEnd()
-                    } else {
-                        _playerState.value = currentState.copy(
-                            currentPosition = newPosition,
-                            progress = newProgress
-                        )
-                    }
-                }
-                delay(1000)
-            }
+    fun playPlaylist(playlist: Playlist) {
+        if (playlist.songs.isNotEmpty()) {
+            _playlistState.value = _playlistState.value.copy(
+                currentPlaylist = playlist.songs,
+                currentIndex = 0
+            )
+            mediaPlayerService?.playSong(playlist.songs.first())
         }
     }
 
-    private fun handleSongEnd() {
-        val repeatMode = _playerState.value.repeatMode
-        when (repeatMode) {
-            RepeatMode.ONE -> {
-                _playerState.value = _playerState.value.copy(
-                    currentPosition = 0L,
-                    progress = 0f
-                )
-            }
-            RepeatMode.ALL -> skipToNext()
-            RepeatMode.OFF -> {
-                val playlistState = _playlistState.value
-                if (playlistState.currentIndex < playlistState.currentPlaylist.size - 1) {
-                    skipToNext()
-                } else {
-                    _playerState.value = _playerState.value.copy(
-                        isPlaying = false,
-                        currentPosition = 0L,
-                        progress = 0f
-                    )
-                }
-            }
+    fun playArtistSongs(artist: Artist) {
+        val artistSongs = _libraryState.value.songs.filter { it.artistId == artist.id }
+        if (artistSongs.isNotEmpty()) {
+            _playlistState.value = _playlistState.value.copy(
+                currentPlaylist = artistSongs,
+                currentIndex = 0
+            )
+            mediaPlayerService?.playSong(artistSongs.first())
         }
     }
 
-    private fun parseDurationToMillis(duration: String): Long {
-        return try {
-            val parts = duration.split(":")
-            val minutes = parts[0].toLong()
-            val seconds = parts[1].toLong()
-            (minutes * 60 + seconds) * 1000
-        } catch (e: Exception) {
-            180000L
+    fun playAlbumSongs(album: Album) {
+        val albumSongs = _libraryState.value.songs.filter { it.albumId == album.id }
+            .sortedBy { it.trackNumber }
+        if (albumSongs.isNotEmpty()) {
+            _playlistState.value = _playlistState.value.copy(
+                currentPlaylist = albumSongs,
+                currentIndex = 0
+            )
+            mediaPlayerService?.playSong(albumSongs.first())
         }
     }
-}
+
+    fun refreshLibrary() {
+        if (_libraryState.value.hasPermission) {
+            loadMusicLibrary()
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        if (isServiceBound) {
+            context.unbindService(serviceConnection)
+            isServiceBound = false
+        }
+    }}

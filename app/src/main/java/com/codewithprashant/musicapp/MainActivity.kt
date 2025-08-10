@@ -1,6 +1,7 @@
-// MainActivity.kt - Fixed Version with No Errors
+// MainActivity.kt - Final Version with Permissions and Media Integration
 package com.codewithprashant.musicapp
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,71 +52,307 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicAppMain() {
+    val context = LocalContext.current
     val viewModel: MusicViewModel = viewModel()
     val playerState by viewModel.playerState.collectAsState()
     val libraryState by viewModel.libraryState.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val permissionState = rememberPermissionState()
+
+    // Check if this is the first launch
+    var isFirstLaunch by remember {
+        mutableStateOf(isFirstAppLaunch(context))
+    }
 
     var showPlayerScreen by remember { mutableStateOf(false) }
     var showSearchScreen by remember { mutableStateOf(false) }
     var selectedSong by remember { mutableStateOf<Song?>(null) }
 
+    // Handle permission grant
+    LaunchedEffect(permissionState.hasPermission) {
+        if (permissionState.hasPermission && !libraryState.hasPermission) {
+            viewModel.requestPermissions()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
-        AnimatedContent(
-            targetState = when {
-                showPlayerScreen -> "player"
-                showSearchScreen -> "search"
-                else -> "main"
-            },
-            transitionSpec = {
-                slideInVertically(
-                    animationSpec = tween(600, easing = EaseOutCubic),
-                    initialOffsetY = { if (targetState == "player") it else -it }
-                ) togetherWith slideOutVertically(
-                    animationSpec = tween(600, easing = EaseInCubic),
-                    targetOffsetY = { if (initialState == "player") it else -it }
-                )
-            },
-            label = "screen_transition"
-        ) { screen ->
-            when (screen) {
-                "main" -> MainScreen(
-                    libraryState = libraryState,
-                    playerState = playerState,
-                    uiState = uiState,
-                    onSongClick = { song ->
-                        selectedSong = song
-                        viewModel.playSong(song)
-                        showPlayerScreen = true
-                    },
-                    onSearchClick = { showSearchScreen = true },
-                    onTabSelected = viewModel::updateSelectedTab,
-                    onMiniPlayerClick = { showPlayerScreen = true }
-                )
-                "player" -> PlayerScreen(
-                    song = selectedSong ?: playerState.currentSong,
-                    playerState = playerState,
-                    onBackClick = { showPlayerScreen = false },
-                    onPlayPause = viewModel::playPause,
-                    onNext = viewModel::skipToNext,
-                    onPrevious = viewModel::skipToPrevious,
-                    onSeek = viewModel::seekTo,
-                    onVolumeChange = viewModel::setVolume,
-                    onRepeatToggle = viewModel::toggleRepeat,
-                    onShuffleToggle = viewModel::toggleShuffle
-                )
-                "search" -> SearchScreen(
-                    onBackClick = { showSearchScreen = false },
-                    onSongClick = { song ->
-                        selectedSong = song
-                        viewModel.playSong(song)
-                        showSearchScreen = false
-                        showPlayerScreen = true
+        when {
+            isFirstLaunch -> {
+                WelcomeScreen(
+                    onGetStarted = {
+                        setFirstLaunchComplete(context)
+                        isFirstLaunch = false
                     }
                 )
             }
+            !permissionState.hasPermission -> {
+                PermissionScreen(
+                    onRequestPermission = permissionState.requestPermission
+                )
+            }
+            libraryState.isLoading -> {
+                LoadingScreen(
+                    progress = libraryState.scanProgress
+                )
+            }
+            else -> {
+                AnimatedContent(
+                    targetState = when {
+                        showPlayerScreen -> "player"
+                        showSearchScreen -> "search"
+                        else -> "main"
+                    },
+                    transitionSpec = {
+                        slideInVertically(
+                            animationSpec = tween(600, easing = EaseOutCubic),
+                            initialOffsetY = { if (targetState == "player") it else -it }
+                        ) togetherWith slideOutVertically(
+                            animationSpec = tween(600, easing = EaseInCubic),
+                            targetOffsetY = { if (initialState == "player") it else -it }
+                        )
+                    },
+                    label = "screen_transition"
+                ) { screen ->
+                    when (screen) {
+                        "main" -> MainScreen(
+                            libraryState = libraryState,
+                            playerState = playerState,
+                            uiState = uiState,
+                            onSongClick = { song ->
+                                selectedSong = song
+                                viewModel.playSong(song)
+                                showPlayerScreen = true
+                            },
+                            onSearchClick = { showSearchScreen = true },
+                            onTabSelected = viewModel::updateSelectedTab,
+                            onMiniPlayerClick = { showPlayerScreen = true },
+                            onPlaylistClick = viewModel::playPlaylist,
+                            onArtistClick = viewModel::playArtistSongs,
+                            onAlbumClick = viewModel::playAlbumSongs
+                        )
+                        "player" -> PlayerScreen(
+                            song = selectedSong ?: playerState.currentSong,
+                            playerState = playerState,
+                            onBackClick = { showPlayerScreen = false },
+                            onPlayPause = viewModel::playPause,
+                            onNext = viewModel::skipToNext,
+                            onPrevious = viewModel::skipToPrevious,
+                            onSeek = viewModel::seekTo,
+                            onVolumeChange = viewModel::setVolume,
+                            onRepeatToggle = viewModel::toggleRepeat,
+                            onShuffleToggle = viewModel::toggleShuffle
+                        )
+                        "search" -> SearchScreen(
+                            onBackClick = { showSearchScreen = false },
+                            onSongClick = { song ->
+                                selectedSong = song
+                                viewModel.playSong(song)
+                                showSearchScreen = false
+                                showPlayerScreen = true
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+@Composable
+fun PermissionScreen(
+    onRequestPermission: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(DeepNavy, MidnightBlue, DarkCharcoal)
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Rounded.MusicNote,
+                        contentDescription = null,
+                        tint = SoftPurple,
+                        modifier = Modifier.size(64.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Music Access Required",
+                        color = TextPrimary,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "To play your music, we need access to your audio files. Your privacy is important to us - we only access music files.",
+                        color = TextSecondary,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 24.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Button(
+                        onClick = onRequestPermission,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(28.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            SoftPurple.copy(alpha = 0.6f)
+                        )
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        colors = listOf(
+                                            SoftPurple.copy(alpha = 0.8f),
+                                            SoftBlue.copy(alpha = 0.6f)
+                                        )
+                                    ),
+                                    RoundedCornerShape(28.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Grant Permission",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingScreen(
+    progress: Float
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(DeepNavy, MidnightBlue, DarkCharcoal)
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .glassCard(alpha = 0.15f, cornerRadius = 24.dp)
+                    .padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Rounded.LibraryMusic,
+                        contentDescription = null,
+                        tint = SoftBlue,
+                        modifier = Modifier.size(64.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Scanning Your Music",
+                        color = TextPrimary,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Please wait while we discover your music library...",
+                        color = TextSecondary,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp),
+                        color = SoftBlue,
+                        trackColor = GlassMedium,
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Utility functions for managing first launch
+private fun isFirstAppLaunch(context: Context): Boolean {
+    val sharedPrefs = context.getSharedPreferences("music_app_prefs", Context.MODE_PRIVATE)
+    return !sharedPrefs.getBoolean("has_launched_before", false)
+}
+
+private fun setFirstLaunchComplete(context: Context) {
+    val sharedPrefs = context.getSharedPreferences("music_app_prefs", Context.MODE_PRIVATE)
+    sharedPrefs.edit().putBoolean("has_launched_before", true).apply()
 }
 
 @Composable
@@ -125,7 +363,10 @@ fun MainScreen(
     onSongClick: (Song) -> Unit,
     onSearchClick: () -> Unit,
     onTabSelected: (Int) -> Unit,
-    onMiniPlayerClick: () -> Unit
+    onMiniPlayerClick: () -> Unit,
+    onPlaylistClick: (Playlist) -> Unit,
+    onArtistClick: (Artist) -> Unit,
+    onAlbumClick: (Album) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -163,11 +404,11 @@ fun MainScreen(
                     )
                     2 -> PlaylistsContent(
                         playlists = libraryState.playlists,
-                        onPlaylistClick = { }
+                        onPlaylistClick = onPlaylistClick
                     )
                     3 -> ArtistsContent(
                         artists = libraryState.artists,
-                        onArtistClick = { }
+                        onArtistClick = onArtistClick
                     )
                 }
             }
@@ -325,32 +566,97 @@ fun HomeContent(
             QuickAccessSection()
         }
 
-        item {
-            SectionHeader("Recently Played")
-            Spacer(modifier = Modifier.height(16.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                items(recentlyPlayed) { song ->
-                    RecentlyPlayedCard(
-                        song = song,
-                        onClick = { onSongClick(song) }
-                    )
+        if (recentlyPlayed.isNotEmpty()) {
+            item {
+                SectionHeader("Recently Played")
+                Spacer(modifier = Modifier.height(16.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(recentlyPlayed) { song ->
+                        RecentlyPlayedCard(
+                            song = song,
+                            onClick = { onSongClick(song) }
+                        )
+                    }
                 }
             }
         }
 
-        item {
-            SectionHeader("Trending Now")
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        if (songs.isNotEmpty()) {
+            item {
+                SectionHeader("Your Music")
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
-        items(songs.take(5)) { song ->
-            EnhancedSongItem(
-                song = song,
-                onClick = { onSongClick(song) }
-            )
+            items(songs.take(10)) { song ->
+                EnhancedSongItem(
+                    song = song,
+                    onClick = { onSongClick(song) }
+                )
+            }
+        } else {
+            item {
+                EmptyStateCard(
+                    title = "No Music Found",
+                    subtitle = "Add some music to your device to get started",
+                    icon = Icons.Rounded.MusicOff
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptyStateCard(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .glassCard(alpha = 0.1f, cornerRadius = 24.dp)
+                .padding(32.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = TextTertiary,
+                    modifier = Modifier.size(48.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = title,
+                    color = TextPrimary,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = subtitle,
+                    color = TextSecondary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -392,14 +698,14 @@ fun QuickAccessSection() {
             ) {
                 Column {
                     Text(
-                        text = "Discover Weekly",
+                        text = "Your Music Library",
                         color = TextPrimary,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Fresh music curated for you",
+                        text = "Discover and play your favorite tracks",
                         color = TextSecondary,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -806,15 +1112,23 @@ fun LibraryContent(
     songs: List<Song>,
     onSongClick: (Song) -> Unit
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(songs) { song ->
-            EnhancedSongItem(
-                song = song,
-                onClick = { onSongClick(song) }
-            )
+    if (songs.isEmpty()) {
+        EmptyStateCard(
+            title = "No Songs Found",
+            subtitle = "Your music library is empty",
+            icon = Icons.Rounded.MusicOff
+        )
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(songs) { song ->
+                EnhancedSongItem(
+                    song = song,
+                    onClick = { onSongClick(song) }
+                )
+            }
         }
     }
 }
@@ -824,15 +1138,23 @@ fun PlaylistsContent(
     playlists: List<Playlist>,
     onPlaylistClick: (Playlist) -> Unit
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(playlists) { playlist ->
-            PlaylistCard(
-                playlist = playlist,
-                onClick = { onPlaylistClick(playlist) }
-            )
+    if (playlists.isEmpty()) {
+        EmptyStateCard(
+            title = "No Playlists",
+            subtitle = "Create your first playlist to get started",
+            icon = Icons.Rounded.PlaylistAdd
+        )
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(playlists) { playlist ->
+                PlaylistCard(
+                    playlist = playlist,
+                    onClick = { onPlaylistClick(playlist) }
+                )
+            }
         }
     }
 }
@@ -933,15 +1255,23 @@ fun ArtistsContent(
     artists: List<Artist>,
     onArtistClick: (Artist) -> Unit
 ) {
-    LazyColumn(
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(artists) { artist ->
-            ArtistCard(
-                artist = artist,
-                onClick = { onArtistClick(artist) }
-            )
+    if (artists.isEmpty()) {
+        EmptyStateCard(
+            title = "No Artists Found",
+            subtitle = "No artist information available",
+            icon = Icons.Rounded.Person
+        )
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(artists) { artist ->
+                ArtistCard(
+                    artist = artist,
+                    onClick = { onArtistClick(artist) }
+                )
+            }
         }
     }
 }

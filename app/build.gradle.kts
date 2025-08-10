@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.codewithprashant.musicapp"
-        minSdk = 21
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -62,5 +62,17 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    // Media and Audio
+    implementation("androidx.media:media:1.7.0")
+    implementation("androidx.lifecycle:lifecycle-service:2.7.0")
+// Image Loading (for Album Art)
+    implementation("io.coil-kt:coil-compose:2.5.0")
+// Permissions
+    implementation("androidx.activity:activity-compose:1.8.2")
+// Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+// ViewModel
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
 }

@@ -1,16 +1,19 @@
-// MusicScanner.kt - Device Music Scanner
+// MusicScanner.kt - Fixed Imports Version
 package com.codewithprashant.musicapp
 
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
-import android.util.Size
+import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -19,6 +22,8 @@ import java.io.File
 class MusicScanner(private val context: Context) {
 
     companion object {
+        private const val TAG = "MusicScanner"
+
         private val MUSIC_PROJECTION = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
@@ -35,15 +40,18 @@ class MusicScanner(private val context: Context) {
             MediaStore.Audio.Media.MIME_TYPE
         )
 
-        private const val MUSIC_SELECTION = "${MediaStore.Audio.Media.IS_MUSIC} = 1 AND ${MediaStore.Audio.Media.DURATION} > 30000"
+        // More permissive selection to find more files
+        private const val MUSIC_SELECTION = "${MediaStore.Audio.Media.IS_MUSIC} = 1"
         private const val MUSIC_SORT_ORDER = "${MediaStore.Audio.Media.TITLE} ASC"
     }
 
     suspend fun scanForMusic(): List<Song> = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Starting music scan...")
         val songs = mutableListOf<Song>()
         val contentResolver = context.contentResolver
 
         try {
+            Log.d(TAG, "Querying MediaStore for audio files...")
             val cursor = contentResolver.query(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 MUSIC_PROJECTION,
@@ -52,7 +60,14 @@ class MusicScanner(private val context: Context) {
                 MUSIC_SORT_ORDER
             )
 
-            cursor?.use { c ->
+            if (cursor == null) {
+                Log.e(TAG, "Cursor is null - no permission or no media")
+                return@withContext songs
+            }
+
+            Log.d(TAG, "Found ${cursor.count} potential audio files")
+
+            cursor.use { c ->
                 val idColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
                 val titleColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
                 val artistColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
@@ -66,23 +81,41 @@ class MusicScanner(private val context: Context) {
                 val sizeColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
                 val dateAddedColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_ADDED)
 
+                var processedCount = 0
+                var validSongs = 0
+
                 while (c.moveToNext()) {
                     try {
+                        processedCount++
+
                         val id = c.getLong(idColumn)
                         val title = c.getString(titleColumn) ?: "Unknown Title"
                         val artist = c.getString(artistColumn) ?: "Unknown Artist"
                         val album = c.getString(albumColumn) ?: "Unknown Album"
                         val duration = c.getLong(durationColumn)
-                        val filePath = c.getString(dataColumn) ?: continue
+                        val filePath = c.getString(dataColumn)
                         val albumId = c.getLong(albumIdColumn)
                         val artistId = c.getLong(artistIdColumn)
                         val year = c.getInt(yearColumn)
                         val track = c.getInt(trackColumn)
                         val size = c.getLong(sizeColumn)
-                        val dateAdded = c.getLong(dateAddedColumn) * 1000 // Convert to milliseconds
+                        val dateAdded = c.getLong(dateAddedColumn) * 1000
 
-                        // Check if file actually exists
-                        if (!File(filePath).exists()) continue
+                        Log.d(TAG, "Processing song #$processedCount: $title by $artist")
+                        Log.d(TAG, "File path: $filePath")
+                        Log.d(TAG, "Duration: ${duration}ms, Size: ${size} bytes")
+
+                        if (filePath.isNullOrEmpty()) {
+                            Log.w(TAG, "Skipping song with empty file path: $title")
+                            continue
+                        }
+
+                        // Check if file exists (skip this check for now to see all entries)
+                        val file = File(filePath)
+                        if (!file.exists()) {
+                            Log.w(TAG, "File does not exist: $filePath")
+                            // Continue anyway to see if MediaPlayer can handle it
+                        }
 
                         // Get album art path
                         val albumArtPath = getAlbumArtPath(albumId)
@@ -104,22 +137,28 @@ class MusicScanner(private val context: Context) {
                         )
 
                         songs.add(song)
+                        validSongs++
+
+                        Log.d(TAG, "Added song: ${song.title} - ${song.duration}")
 
                     } catch (e: Exception) {
-                        e.printStackTrace()
-                        // Continue with next song if this one fails
+                        Log.e(TAG, "Error processing song #$processedCount", e)
                         continue
                     }
                 }
+
+                Log.i(TAG, "Scan complete: $validSongs valid songs out of $processedCount processed")
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error during music scan", e)
         }
 
-        songs
+        Log.i(TAG, "Returning ${songs.size} songs")
+        return@withContext songs
     }
 
     suspend fun scanForAlbums(): List<Album> = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Starting album scan...")
         val albums = mutableListOf<Album>()
         val contentResolver = context.contentResolver
 
@@ -142,6 +181,8 @@ class MusicScanner(private val context: Context) {
             )
 
             cursor?.use { c ->
+                Log.d(TAG, "Found ${c.count} albums")
+
                 val idColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
                 val albumColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
                 val artistColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
@@ -163,26 +204,29 @@ class MusicScanner(private val context: Context) {
                             title = albumName,
                             artist = artist,
                             year = year,
-                            songs = emptyList(), // Will be populated later if needed
+                            songs = emptyList(),
                             albumArt = albumArt
                         )
 
                         albums.add(album)
+                        Log.d(TAG, "Added album: $albumName by $artist ($songCount songs)")
 
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Error processing album", e)
                         continue
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error during album scan", e)
         }
 
-        albums
+        Log.i(TAG, "Album scan complete: ${albums.size} albums found")
+        return@withContext albums
     }
 
     suspend fun scanForArtists(): List<Artist> = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Starting artist scan...")
         val artists = mutableListOf<Artist>()
         val contentResolver = context.contentResolver
 
@@ -203,6 +247,8 @@ class MusicScanner(private val context: Context) {
             )
 
             cursor?.use { c ->
+                Log.d(TAG, "Found ${c.count} artists")
+
                 val idColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Artists._ID)
                 val artistColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Artists.ARTIST)
                 val albumCountColumn = c.getColumnIndexOrThrow(MediaStore.Audio.Artists.NUMBER_OF_ALBUMS)
@@ -215,8 +261,8 @@ class MusicScanner(private val context: Context) {
                         val albumCount = c.getInt(albumCountColumn)
                         val trackCount = c.getInt(trackCountColumn)
 
-                        // Skip "Unknown Artist" entries with no real content
-                        if (artistName == "Unknown Artist" || artistName == "<unknown>") {
+                        // Skip unknown artists with no content
+                        if (artistName == "Unknown Artist" || artistName == "<unknown>" || trackCount == 0) {
                             continue
                         }
 
@@ -228,18 +274,20 @@ class MusicScanner(private val context: Context) {
                         )
 
                         artists.add(artist)
+                        Log.d(TAG, "Added artist: $artistName ($albumCount albums, $trackCount tracks)")
 
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Error processing artist", e)
                         continue
                     }
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error during artist scan", e)
         }
 
-        artists
+        Log.i(TAG, "Artist scan complete: ${artists.size} artists found")
+        return@withContext artists
     }
 
     private fun getAlbumArtPath(albumId: Long): String {
@@ -248,17 +296,19 @@ class MusicScanner(private val context: Context) {
                 Uri.parse("content://media/external/audio/albumart"),
                 albumId
             )
+            Log.d(TAG, "Album art URI for album $albumId: $uri")
             uri.toString()
         } catch (e: Exception) {
+            Log.w(TAG, "Could not get album art for album $albumId", e)
             ""
         }
     }
 
     fun getAlbumArtBitmap(song: Song): Bitmap? {
         return try {
+            Log.d(TAG, "Loading album art for: ${song.title}")
             when {
                 song.albumArt.isNotEmpty() -> {
-                    // Try to load from album art path
                     if (song.albumArt.startsWith("content://")) {
                         val uri = Uri.parse(song.albumArt)
                         context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -269,50 +319,33 @@ class MusicScanner(private val context: Context) {
                     }
                 }
                 song.filePath.isNotEmpty() -> {
-                    // Try to extract from audio file metadata
                     extractAlbumArtFromFile(song.filePath)
                 }
                 else -> null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error loading album art for ${song.title}", e)
             null
         }
     }
 
     private fun extractAlbumArtFromFile(filePath: String): Bitmap? {
         return try {
+            Log.d(TAG, "Extracting album art from file: $filePath")
             val retriever = MediaMetadataRetriever()
             retriever.setDataSource(filePath)
             val albumArtBytes = retriever.embeddedPicture
             retriever.release()
 
             albumArtBytes?.let { bytes ->
+                Log.d(TAG, "Found embedded album art (${bytes.size} bytes)")
                 BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            } ?: run {
+                Log.d(TAG, "No embedded album art found")
+                null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
-    fun saveAlbumArtToCache(song: Song, bitmap: Bitmap): String? {
-        return try {
-            val cacheDir = File(context.cacheDir, "album_art")
-            if (!cacheDir.exists()) {
-                cacheDir.mkdirs()
-            }
-
-            val fileName = "album_${song.albumId}_${song.id}.jpg"
-            val file = File(cacheDir, fileName)
-
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
-
-            file.writeBytes(outputStream.toByteArray())
-            file.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error extracting album art from $filePath", e)
             null
         }
     }
@@ -324,57 +357,26 @@ class MusicScanner(private val context: Context) {
         return String.format("%d:%02d", minutes, seconds)
     }
 
-    fun getSongsForAlbum(albumId: String): List<Song> {
-        val songs = mutableListOf<Song>()
-        val contentResolver = context.contentResolver
-
-        try {
-            val selection = "${MediaStore.Audio.Media.ALBUM_ID} = ? AND ${MediaStore.Audio.Media.IS_MUSIC} = 1"
-            val selectionArgs = arrayOf(albumId)
-
-            val cursor = contentResolver.query(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                MUSIC_PROJECTION,
-                selection,
-                selectionArgs,
-                "${MediaStore.Audio.Media.TRACK} ASC"
-            )
-
-            cursor?.use { c ->
-                // Process cursor similar to scanForMusic()
-                // Implementation similar to above
+    // Debug function to check permissions
+    fun checkPermissions(): Boolean {
+        val hasReadAudio = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.READ_MEDIA_AUDIO
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.READ_EXTERNAL_STORAGE
+                ) == PackageManager.PERMISSION_GRANTED
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error checking permissions", e)
+            false
         }
 
-        return songs
-    }
-
-    fun getSongsForArtist(artistId: String): List<Song> {
-        val songs = mutableListOf<Song>()
-        val contentResolver = context.contentResolver
-
-        try {
-            val selection = "${MediaStore.Audio.Media.ARTIST_ID} = ? AND ${MediaStore.Audio.Media.IS_MUSIC} = 1"
-            val selectionArgs = arrayOf(artistId)
-
-            val cursor = contentResolver.query(
-                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                MUSIC_PROJECTION,
-                selection,
-                selectionArgs,
-                "${MediaStore.Audio.Media.ALBUM} ASC, ${MediaStore.Audio.Media.TRACK} ASC"
-            )
-
-            cursor?.use { c ->
-                // Process cursor similar to scanForMusic()
-                // Implementation similar to above
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return songs
+        Log.i(TAG, "Audio permission granted: $hasReadAudio")
+        return hasReadAudio
     }
 }
